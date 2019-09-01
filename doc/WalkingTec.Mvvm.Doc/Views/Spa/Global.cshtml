@@ -1,13 +1,15 @@
-﻿<style>
+<style>
     a {
         color: #01aaed
     }
 </style>
 <wt:fieldset field-set-style="Simple" title="全局配置">
+</wt:fieldset>
     <wt:quote>ClientApp/src 目录下的 global.config.tsx文件定义了前端的一些全局配置</wt:quote>
 
     <wt:fieldset field-set-style="Simple" title="ConfigInfo属性说明">
-        <table lay-filter="parse-table-demo">
+      </wt:fieldset>
+      <table lay-filter="parse-table-demo">
             <thead>
                 <tr>
                     <th lay-data="{field:'username', width:200}">属性</th>
@@ -57,8 +59,6 @@
                 </tr>
             </tbody>
         </table>
-    </wt:fieldset>
-</wt:fieldset>
 <wt:fieldset field-set-style="Simple" title="菜单配置">
     <p>在开发模式下，框架读取ClientApp/src/subMenu.json文件来生成左侧菜单</p>
     <p>发布之后，框架通过数据库里配置的菜单来生成左侧菜单</p>
@@ -70,10 +70,10 @@
 </wt:fieldset>
 
 <script>
-    layui.code({ about: false });
+layui.use('code',function(){layui.code({ about: false })})
 </script>
 <script>
         layui.table.init('parse-table-demo', {
-            limit: 100 
+        limit: 100, page: false
         });
 </script>

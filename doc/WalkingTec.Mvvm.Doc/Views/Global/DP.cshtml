@@ -15,12 +15,12 @@ public class Program
         BuildWebHost(args).Run();
     }
 
-    public static IWebHost BuildWebHost(string[] args) =>            
+    public static IWebHost BuildWebHost(string[] args) =>
         WebHost.CreateDefaultBuilder(args)
             .ConfigureServices(x =>
             {
-                List&lt;IDataPrivilege&gt; pris = new List&lt;IDataPrivilege&gt;();
-                pris.Add(new DataPrivilegeInfo&lt;TestRole&gt;("测试角色", y => y.RoleName));
+                List<IDataPrivilege> pris = new List<IDataPrivilege>();
+                pris.Add(new DataPrivilegeInfo<TestRole>("测试角色", y => y.RoleName));
                 x.AddFrameworkService(dataPrivilegeSettings: pris);
                 x.AddLayui();
             })
@@ -42,6 +42,6 @@ public class Program
     <p>如果使用lambda编写查询语句，可以使用系统提供的DpWhere函数来简化数据权限的验证</p>
 </wt:fieldset>
     <script>
-        layui.code({ about: false });
+    layui.use('code',function(){layui.code({ about: false })})
     </script>
 

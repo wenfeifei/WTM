@@ -1,4 +1,4 @@
-﻿<style>
+<style>
     a {
         color: #01aaed
     }
@@ -7,7 +7,8 @@
 WTM框架提供了一个BaseController，所有框架内编写的Controller都应该继承这个基类，BaseController提供了很多方便的属性和方法
 
 <wt:fieldset field-set-style="Simple" title="属性说明">
-    <table lay-filter="parse-table-demo">
+ </wt:fieldset>
+   <table lay-filter="parse-table-demo">
         <thead>
             <tr>
                 <th lay-data="{field:'username', width:200}">属性</th>
@@ -49,10 +50,10 @@ WTM框架提供了一个BaseController，所有框架内编写的Controller都�
             </tr>
         </tbody>
     </table>
-</wt:fieldset>
 
 <wt:fieldset field-set-style="Simple" title="方法说明">
-    <table lay-filter="parse-table-demo">
+ </wt:fieldset>
+   <table lay-filter="parse-table-demo">
         <thead>
             <tr>
                 <th lay-data="{field:'username', width:200}">方法</th>
@@ -86,10 +87,9 @@ WTM框架提供了一个BaseController，所有框架内编写的Controller都�
             </tr>
         </tbody>
     </table>
-</wt:fieldset>
 
 <script>
         layui.table.init('parse-table-demo', {
-            limit: 100 
+        limit: 100, page: false
         });
 </script>
