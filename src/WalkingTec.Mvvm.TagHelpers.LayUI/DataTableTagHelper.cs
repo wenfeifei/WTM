@@ -447,7 +447,7 @@ layui.use(['table'], function(){{
     {(Method == null ? ",method:'post'" : $",method: '{Method.Value.ToString().ToLower()}'")}
     {(Loading ?? true ? string.Empty : ",loading:false")}
     {(page ? string.Empty : ",page:{layout:['count']}")}
-    {(page ? string.Empty : $",limit:{(UseLocalData ? ListVM.GetEntityList().Count().ToString() : "0")}")}
+    {(page ? $",limit:{Limit}" : $",limit:{(UseLocalData ? ListVM.GetEntityList().Count().ToString() : "0")}")}
     {(page
         ? (Limits == null || Limits.Length == 0
             ? string.Empty
@@ -483,7 +483,7 @@ layui.use(['table'], function(){{
     var sortfilter = {{}};
     sortfilter['Searcher.SortInfo.Property'] = obj.field;
     sortfilter['Searcher.SortInfo.Direction'] = obj.type.replace(obj.type[0],obj.type[0].toUpperCase());
-    var w = $.extend({Id}option.where,sortfilter);
+    var w = $.extend({Id}option.where,sortfilter,ff.GetSearchFormData('{SearchPanelId}','{Vm.Name}'));
 
     table.reload('{Id}', {{
     initSort: obj,
