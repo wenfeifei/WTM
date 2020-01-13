@@ -3,6 +3,7 @@ using System.IO;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Localization;
@@ -17,7 +18,7 @@ namespace WalkingTec.Mvvm.Demo
     public class Program
     {
         public static void Main(string[] args)
-        {           
+        {
             CreateWebHostBuilder(args).Build().Run();
         }
 
@@ -47,11 +48,22 @@ namespace WalkingTec.Mvvm.Demo
                             new DataPrivilegeInfo<School>("学校", y => y.SchoolName),
                             new DataPrivilegeInfo<Major>("专业", y => y.MajorName)
                         };
-                        x.AddFrameworkService(dataPrivilegeSettings: pris, webHostBuilderContext: hostingCtx);
+                        x.AddFrameworkService(dataPrivilegeSettings: pris, webHostBuilderContext: hostingCtx,CsSector:CSSelector);
                         x.AddLayui();
                         x.AddSwaggerGen(c =>
                         {
                             c.SwaggerDoc("v1", new Info { Title = "My API", Version = "v1" });
+                            c.AddSecurityDefinition("Bearer", new ApiKeyScheme()
+                            {
+                                Description = "JWT Bearer",
+                                Name = "Authorization",
+                                In = "header",
+                                Type = "apiKey"
+                            });
+                            c.AddSecurityRequirement(new Dictionary<string, IEnumerable<string>>
+                            {
+                                { "Bearer", new string[] { } }
+                            });
                         });
                     })
                     .Configure(x =>
@@ -68,6 +80,34 @@ namespace WalkingTec.Mvvm.Demo
                         x.UseFrameworkService();
                     })
                     .UseUrls(globalConfig.ApplicationUrl);
+        }
+
+        public static string CSSelector(ActionExecutingContext context)
+        {
+            var userinfo = (context.Controller as IBaseController)?.LoginUserInfo;
+            if (userinfo == null)
+            {
+                return "default";
+            }
+            else
+            {
+                if (userinfo.ITCode.StartsWith("a"))
+                {
+                    return "default";
+                }
+                else
+                {
+                    return "default";
+                }
+            }
+        }
+    }
+
+    public static class ConfigInfoExtension
+    {
+        public static string Key1(this Configs self)
+        {
+            return self.AppSettings["Key1"];
         }
     }
 }

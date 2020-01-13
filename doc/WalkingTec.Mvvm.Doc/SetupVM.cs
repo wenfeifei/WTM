@@ -134,11 +134,11 @@ namespace WalkingTec.Mvvm.Doc
             {
                 case DotnetVersionEnum.dotnet2_2:
                     SwashbuckleVersion = "4.0.1";
-                    version = Utils.GetNugetVersion(false);
+                    version = Utils.GetNugetVersion("2.",false);
                     break;
                 case DotnetVersionEnum.dotnet3_0:
                     SwashbuckleVersion = "5.0.0-rc4";
-                    version = version = Utils.GetNugetVersion(true);
+                    version = Utils.GetNugetVersion("3.",true);
                     break;
                 default:
                     break;
@@ -208,7 +208,7 @@ namespace WalkingTec.Mvvm.Doc
     <PackageReference Include=""WalkingTec.Mvvm.TagHelpers.LayUI"" Version=""{version}"" />
     <PackageReference Include=""WalkingTec.Mvvm.Mvc.Admin"" Version=""{version}"" />
     <PackageReference Include=""Swashbuckle.AspNetCore"" Version=""{SwashbuckleVersion}"" />
- </ItemGroup>
+</ItemGroup>
 </Project>
 ");
                 proj = proj.Replace("</PropertyGroup>", $@"
@@ -383,7 +383,6 @@ EndProject
                 File.WriteAllText($"{MainDir}{Path.DirectorySeparatorChar}Views{Path.DirectorySeparatorChar}Home{Path.DirectorySeparatorChar}PIndex.cshtml", GetResource("home.PIndex.txt", "Mvc").Replace("$ns$", MainNs).Replace("$vmns$", vmns), Encoding.UTF8);
                 File.WriteAllText($"{MainDir}{Path.DirectorySeparatorChar}Views{Path.DirectorySeparatorChar}Home{Path.DirectorySeparatorChar}FrontPage.cshtml", GetResource("home.FrontPage.txt", "Mvc").Replace("$ns$", MainNs).Replace("$vmns$", vmns), Encoding.UTF8);
                 File.WriteAllText($"{vmdir}{Path.DirectorySeparatorChar}HomeVMs{Path.DirectorySeparatorChar}ChangePasswordVM.cs", GetResource("vms.ChangePasswordVM.txt").Replace("$ns$", MainNs).Replace("$vmns$", vmns), Encoding.UTF8);
-                File.WriteAllText($"{vmdir}{Path.DirectorySeparatorChar}HomeVMs{Path.DirectorySeparatorChar}IndexVM.cs", GetResource("vms.IndexVM.txt").Replace("$ns$", MainNs).Replace("$vmns$", vmns), Encoding.UTF8);
                 File.WriteAllText($"{vmdir}{Path.DirectorySeparatorChar}HomeVMs{Path.DirectorySeparatorChar}LoginVM.cs", GetResource("vms.LoginVM.txt").Replace("$ns$", MainNs).Replace("$vmns$", vmns), Encoding.UTF8);
                 File.WriteAllText($"{MainDir}{Path.DirectorySeparatorChar}Views{Path.DirectorySeparatorChar}Shared{Path.DirectorySeparatorChar}_Layout.cshtml", GetResource("layui.Layout.txt", "Mvc").Replace("$ns$", MainNs), Encoding.UTF8);
                 File.WriteAllText($"{MainDir}{Path.DirectorySeparatorChar}Program.cs", GetResource("layui.Program.txt", "Mvc").Replace("$ns$", MainNs), Encoding.UTF8);
@@ -445,7 +444,9 @@ module.exports = (app) => {{
 
         private string GetResource(string fileName, string subdir = "")
         {
-            if(fileName == "Proj.txt" || fileName == "TestProj.txt" || fileName == "Program.txt" || fileName == "layui.Program.txt" || fileName == "DefaultProj.txt")
+            if(fileName == "Proj.txt" || fileName == "TestProj.txt" ||
+                fileName == "Program.txt" || fileName == "layui.Program.txt"
+                || fileName == "DefaultProj.txt" )
             {
                 if(DotnetVersion == DotnetVersionEnum.dotnet3_0)
                 {
@@ -472,7 +473,7 @@ module.exports = (app) => {{
             {
                 if (DotnetVersion == DotnetVersionEnum.dotnet3_0)
                 {
-                    content = content.Replace("2.2", "3.0");
+                    content = content.Replace("2.2", "3.1");
                 }
             }
             return content;

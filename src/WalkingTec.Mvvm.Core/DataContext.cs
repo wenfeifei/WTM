@@ -33,7 +33,8 @@ namespace WalkingTec.Mvvm.Core
         public DbSet<FrameworkRole> BaseFrameworkRoles { get; set; }
         public DbSet<FrameworkGroup> BaseFrameworkGroups { get; set; }
         public DbSet<ActionLog> BaseActionLogs { get; set; }
-        public DbSet<FrameworkArea> BaseFrameworkAreas { get; set; }
+        //public DbSet<FrameworkArea> BaseFrameworkAreas { get; set; }
+        public DbSet<PersistedGrant> PersistedGrants { get; set; }
 
 
 
@@ -113,7 +114,7 @@ namespace WalkingTec.Mvvm.Core
             where T : TopBasePoco
         {
             var set = this.Set<T>();
-            if (set.Local.Where(x => x.ID == entity.ID).FirstOrDefault() == null)
+            if (set.Local.AsQueryable().CheckID(entity.GetID()).FirstOrDefault() == null)
             {
                 set.Attach(entity);
             }
@@ -130,7 +131,7 @@ namespace WalkingTec.Mvvm.Core
             where T : TopBasePoco
         {
             var set = this.Set<T>();
-            if (set.Local.Where(x => x.ID == entity.ID).FirstOrDefault() == null)
+            if (set.Local.AsQueryable().CheckID(entity.GetID()).FirstOrDefault() == null)
             {
                 set.Attach(entity);
             }
@@ -144,7 +145,7 @@ namespace WalkingTec.Mvvm.Core
         public void DeleteEntity<T>(T entity) where T : TopBasePoco
         {
             var set = this.Set<T>();
-            if (set.Local.Where(x => x.ID == entity.ID).FirstOrDefault() == null)
+            if (set.Local.AsQueryable().CheckID(entity.GetID()).FirstOrDefault() == null)
             {
                 set.Attach(entity);
             }
@@ -245,7 +246,7 @@ namespace WalkingTec.Mvvm.Core
             }
 
             // 获取类型 T 下 List<S> 类型的属性对应的类型 S，且S 必须是 TopBasePoco 的子类，只有这些类会生成库
-            for (int i = 0; i < allTypes.Count; i++) // 
+            for (int i = 0; i < allTypes.Count; i++) //
             {
                 var item = allTypes[i];
                 var pros = item.GetProperties();
@@ -299,7 +300,21 @@ namespace WalkingTec.Mvvm.Core
             switch (DBType)
             {
                 case DBTypeEnum.SqlServer:
-                    optionsBuilder.UseSqlServer(CSName, op => op.UseRowNumberForPaging());
+                    try
+                    {
+                        var Configs = GlobalServices.GetRequiredService<Configs>();
+                        if (Configs.IsOldSqlServer == true)
+                        {
+                            optionsBuilder.UseSqlServer(CSName, op => op.UseRowNumberForPaging());
+                        }
+                        else
+                        {
+                            optionsBuilder.UseSqlServer(CSName);
+                        }
+                    }
+                    catch {
+                        optionsBuilder.UseSqlServer(CSName, op => op.UseRowNumberForPaging());
+                    }
                     break;
                 case DBTypeEnum.MySql:
                     optionsBuilder.UseMySql(CSName);
@@ -319,11 +334,15 @@ namespace WalkingTec.Mvvm.Core
                 default:
                     break;
             }
-            var Configs = GlobalServices.GetRequiredService<Configs>();//如果是debug模式,将EF生成的sql语句输出到debug输出
-            if (Configs.IsQuickDebug)
+            try
             {
-                optionsBuilder.UseLoggerFactory(LoggerFactory);
+                var Configs = GlobalServices.GetRequiredService<Configs>();//如果是debug模式,将EF生成的sql语句输出到debug输出
+                if (Configs.IsQuickDebug)
+                {
+                    optionsBuilder.UseLoggerFactory(LoggerFactory);
+                }
             }
+            catch { }
             base.OnConfiguring(optionsBuilder);
         }
 
@@ -462,7 +481,7 @@ namespace WalkingTec.Mvvm.Core
 
         private FrameworkMenu GetMenu2(List<FrameworkModule> allModules, string controllerName, List<FrameworkRole> allowedRoles, List<FrameworkUserBase> allowedUsers, int displayOrder)
         {
-            var acts = allModules.Where(x => x.ClassName == "_"+controllerName && x.IsApi == true).SelectMany(x => x.Actions).ToList();
+            var acts = allModules.Where(x => x.FullName == $"WalkingTec.Mvvm.Admin.Api,{controllerName}" && x.IsApi == true).SelectMany(x => x.Actions).ToList();
             var rest = acts.Where(x => x.IgnorePrivillege == false).ToList();
             FrameworkMenu menu = GetMenuFromAction(acts[0], true, allowedRoles, allowedUsers, displayOrder);
             if (menu != null)
@@ -471,7 +490,7 @@ namespace WalkingTec.Mvvm.Core
                 menu.ModuleName = acts[0].Module.ModuleName;
                 menu.PageName = menu.ModuleName;
                 menu.ActionName = Program._localizer["MainPage"];
-                menu.ClassName = acts[0].Module.ClassName;
+                menu.ClassName = acts[0].Module.FullName;
                 menu.MethodName = null;
                 for (int i = 0; i < rest.Count; i++)
                 {
@@ -494,7 +513,7 @@ namespace WalkingTec.Mvvm.Core
             {
                 //ActionId = act.ID,
                 //ModuleId = act.ModuleId,
-                ClassName = act.Module.ClassName,
+                ClassName = act.Module.FullName,
                 MethodName = act.MethodName,
                 Url = act.Url,
                 Privileges = new List<FunctionPrivilege>(),

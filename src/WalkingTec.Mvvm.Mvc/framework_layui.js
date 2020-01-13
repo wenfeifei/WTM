@@ -7,19 +7,19 @@ if (typeof String.prototype.startsWith != 'function') {
   };
 }
 window.ff = {
-    DONOTUSE_Text_LoadFailed : "",
-    DONOTUSE_Text_SubmitFailed: "",
-    DONOTUSE_Text_PleaseSelect: "",
-    DONOTUSE_Text_FailedLoadData: "",
+  DONOTUSE_Text_LoadFailed: "",
+  DONOTUSE_Text_SubmitFailed: "",
+  DONOTUSE_Text_PleaseSelect: "",
+  DONOTUSE_Text_FailedLoadData: "",
 
   SetCookie: function (name, value, allwindow) {
     var cookiePrefix = '', windowGuid = '';
 
     if ("undefined" !== typeof DONOTUSE_COOKIEPRE) {
-        cookiePrefix = DONOTUSE_COOKIEPRE;
+      cookiePrefix = DONOTUSE_COOKIEPRE;
     }
     if ("undefined" !== typeof DONOTUSE_WINDOWGUID) {
-        windowGuid = DONOTUSE_WINDOWGUID;
+      windowGuid = DONOTUSE_WINDOWGUID;
     }
 
     if (allwindow) {
@@ -151,7 +151,7 @@ window.ff = {
             layer.alert(a.responseText);
           }
           else {
-              layer.alert(ff.DONOTUSE_Text_LoadFailed);
+            layer.alert(ff.DONOTUSE_Text_LoadFailed);
           }
         }
       });
@@ -179,7 +179,7 @@ window.ff = {
         },
         error: function (xhr, status, error) {
           layer.close(index);
-            layer.alert(ff.DONOTUSE_Text_LoadFailed);
+          layer.alert(ff.DONOTUSE_Text_LoadFailed);
         },
         complete: function () {
           ff.SetCookie("windowids", null);
@@ -251,8 +251,8 @@ window.ff = {
       data: ff.GetPostData(formId),
       async: true,
       error: function (request) {
-          layer.close(index);
-          alert(ff.DONOTUSE_Text_SubmitFailed);
+        layer.close(index);
+        alert(ff.DONOTUSE_Text_SubmitFailed);
       },
       success: function (data, textStatus, request) {
         layer.close(index);
@@ -282,12 +282,12 @@ window.ff = {
       async: true,
       error: function (request) {
         layer.close(index);
-          if (request.responseText !== undefined && request.responseText !== "") {
-              layer.alert(request.responseText);
-          }
-          else {
-              layer.alert(ff.DONOTUSE_Text_LoadFailed);
-          }
+        if (request.responseText !== undefined && request.responseText !== "") {
+          layer.alert(request.responseText);
+        }
+        else {
+          layer.alert(ff.DONOTUSE_Text_LoadFailed);
+        }
       },
       success: function (str, textStatus, request) {
         layer.close(index);
@@ -303,7 +303,7 @@ window.ff = {
 
   },
 
-  OpenDialog: function (url, windowid, title, width, height, para,maxed) {
+  OpenDialog: function (url, windowid, title, width, height, para, maxed) {
     var layer = layui.layer;
     var index = layer.load(2);
     var wid = this.GetCookie("windowids");
@@ -327,15 +327,20 @@ window.ff = {
       url: url,
       data: para,
       async: true,
-      error: function (request) {
+      error: function (xhr) {
         layer.close(index);
+        let location = xhr.getResponseHeader("Location");
+        if (location) {
+          window.location = location;
+          return false;
+        }
         ff.SetCookie("windowids", owid);
-          if (request.responseText !== undefined && request.responseText !== "") {
-              layer.alert(request.responseText);
-          }
-          else {
-              layer.alert(ff.DONOTUSE_Text_LoadFailed);
-          }
+        if (request.responseText !== undefined && request.responseText !== "") {
+          layer.alert(request.responseText);
+        }
+        else {
+          layer.alert(ff.DONOTUSE_Text_LoadFailed);
+        }
       },
       success: function (str, textStatus, request) {
         layer.close(index);
@@ -346,7 +351,11 @@ window.ff = {
         }
         else {
           str = "<div  id='" + $.cookie("divid") + "' class='donotuse_pdiv'>" + str + "</div>";
-          var area = 'auto';
+            var area = 'auto';
+            if (width > document.body.clientWidth) {
+                max = false;
+                maxed = true;
+            }
           if (width !== undefined && width !== null && height !== undefined && height !== null) {
             area = [width + 'px', height + 'px'];
           }
@@ -370,9 +379,9 @@ window.ff = {
               ff.SetCookie("windowids", owid);
             }
           });
-            if (maxed === true) {
-                layer.full(oid);
-            }
+          if (maxed === true) {
+            layer.full(oid);
+          }
         }
       }
     });
@@ -405,12 +414,12 @@ window.ff = {
       error: function (request) {
         layer.close(index);
         ff.SetCookie("windowids", owid);
-          if (request.responseText !== undefined && request.responseText !== "") {
-              layer.alert(request.responseText);
-          }
-          else {
-              layer.alert(ff.DONOTUSE_Text_LoadFailed);
-          }
+        if (request.responseText !== undefined && request.responseText !== "") {
+          layer.alert(request.responseText);
+        }
+        else {
+          layer.alert(ff.DONOTUSE_Text_LoadFailed);
+        }
       },
       success: function (str) {
         var regGridId = /<\s{0,}table\s+.*\s+id\s{0,}=\s{0,}"(.*)"\s+lay-filter="\1"\s{0,}>\s{0,}<\s{0,}\/\s{0,}table\s{0,}>/im;
@@ -435,14 +444,19 @@ window.ff = {
         if (width !== undefined && width !== null && (height === undefined || height === null)) {
           area = width + 'px';
         }
-        if (title === undefined || title === null || title === '') {
-          title = false;
-        }
-        layer.open({
+          var max = true;
+       if (title === undefined || title === null || title === '') {
+           title = false;
+           max = false;
+          }
+          if (width > document.body.clientWidth) {
+              max = false;
+          }
+       var oid = layer.open({
           type: 1
           , title: title
           , area: area
-          , maxmin: true
+           , maxmin: max
           , btn: []
           , shade: 0.8
           , id: windowid //设定一个id，防止重复弹出
@@ -451,6 +465,10 @@ window.ff = {
             ff.SetCookie("windowids", owid);
           }
         });
+          if (width > document.body.clientWidth) {
+              layer.full(oid);
+          }
+
       }
     });
   },
@@ -465,7 +483,10 @@ window.ff = {
       this.SetCookie("windowids", wid);
     }
     else {
-      if (layui.setter.pageTabs === false || $('.layadmin-tabsbody-item').length === 0) {
+        if (layui.setter == undefined || layui.setter.pageTabs == undefined) {
+            window.close();
+        }
+        else if (layui.setter.pageTabs === false || $('.layadmin-tabsbody-item').length === 0) {
         $('#LAY_app_body').html('');
       }
       else {
@@ -505,12 +526,12 @@ window.ff = {
           });
         }
 
-          if (controltype === "combo") {
-              $('#' + target).html('<option value = "">' + ff.DONOTUSE_Text_PleaseSelect + '</option>');
+        if (controltype === "combo") {
+          $('#' + target).html('<option value = "">' + ff.DONOTUSE_Text_PleaseSelect + '</option>');
           if (data.Data !== undefined && data.Data !== null) {
             for (i = 0; i < data.Data.length; i++) {
-              item = data.Data[i];
-              var icon = item.ICon !== undefined && item.ICon.length > 0 ? ' icon="' + item.ICon + '"' : '';
+                item = data.Data[i];
+                var icon = item.ICon !== undefined && item.ICon != null && item.ICon.length > 0 ? ' icon="' + item.ICon + '"' : '';
               if (item.Selected === true) {
                 $('#' + target).append('<option value = "' + item.Value + '"' + icon + ' selected>' + item.Text + '</option>');
               }
@@ -550,7 +571,7 @@ window.ff = {
 
       }
       else {
-          layer.alert(ff.DONOTUSE_Text_FailedLoadData);
+        layer.alert(ff.DONOTUSE_Text_FailedLoadData);
       }
     });
 
@@ -574,10 +595,10 @@ window.ff = {
       if (/^checkbox|radio$/.test(item.type) && !item.checked) return;
       if (item.value !== null && item.value !== "") {
         if (filter.hasOwnProperty(item.name)) {
-            var temp = filter[item.name];
-            if (!(temp instanceof Array))
-                temp = [temp];
-            temp.push(item.value);
+          var temp = filter[item.name];
+          if (!(temp instanceof Array))
+            temp = [temp];
+          temp.push(item.value);
           filter[item.name] = temp;
         }
         else {
@@ -594,10 +615,10 @@ window.ff = {
       if (!item.name) return;
       if (/^checkbox|radio$/.test(item.type) && !item.checked) return;
       if (filter.hasOwnProperty(item.name)) {
-          var temp = filter[item.name];
-          if (!(temp instanceof Array));
-          temp = [temp];
-          temp.push(item.value);
+        var temp = filter[item.name];
+        if (!(temp instanceof Array));
+        temp = [temp];
+        temp.push(item.value);
         filter[item.name] = temp;
       }
       else {
@@ -619,10 +640,10 @@ window.ff = {
   },
 
   DownloadExcelOrPdf: function (url, formId, defaultcondition, ids) {
-      var formData = ff.GetSearchFormData(formId);
-      if (defaultcondition == null) {
-          defaultcondition = {};
-      }
+    var formData = ff.GetSearchFormData(formId);
+    if (defaultcondition == null) {
+      defaultcondition = {};
+    }
     $.extend(defaultcondition, formData);
     var form = $('<form method="POST" action="' + url + '">');
     for (var attr in defaultcondition) {
@@ -639,6 +660,18 @@ window.ff = {
     form.submit();
     form.remove();
   },
+
+    Download: function (url, ids) {
+        var form = $('<form method="POST" action="' + url + '">');
+        if (ids !== undefined && ids !== null) {
+            for (var i = 0; i < ids.length; i++) {
+                form.append($('<input type="hidden" name="Ids" value="' + ids[i] + '">'));
+            }
+        }
+        $('body').append(form);
+        form.submit();
+        form.remove();
+    },
 
   /**
    * RefreshGrid
@@ -672,10 +705,10 @@ window.ff = {
         data[val] = ff.guid();
       }
     }
-      var re = /(<input .*?)\s*\/>/ig;
-      var re2 = /(<select .*?)\s*>(.*?<\/select>)/ig;
-      var re3 = /(.*?)<input hidden name='(.*?)\.id' .*?\/>(.*?)/ig;
-   for (val in data) {
+    var re = /(<input .*?)\s*\/>/ig;
+    var re2 = /(<select .*?)\s*>(.*?<\/select>)/ig;
+    var re3 = /(.*?)<input hidden name='(.*?)\.id' .*?\/>(.*?)/ig;
+    for (val in data) {
       if (typeof (data[val]) == 'string') {
         data[val] = data[val].replace(/\[\d?\]/ig, "[" + loaddata.length + "]");
         data[val] = data[val].replace(/_\d?_/ig, "_" + loaddata.length + "_");
@@ -691,18 +724,18 @@ window.ff = {
     layui.table.render(option);
   },
 
-  LoadLocalData: function (gridid, option, datas,isnormaltable) {
-      var re = /(<input .*?)\s*\/>/ig;
-      var re2 = /(<select .*?)\s*>(.*?<\/select>)/ig;
-  for (var i = 0; i < datas.length; i++) {
+  LoadLocalData: function (gridid, option, datas, isnormaltable) {
+    var re = /(<input .*?)\s*\/>/ig;
+    var re2 = /(<select .*?)\s*>(.*?<\/select>)/ig;
+    for (var i = 0; i < datas.length; i++) {
       var data = datas[i];
       for (val in data) {
         if (typeof (data[val]) == 'string') {
-            data[val] = data[val].replace(/[$]{2}script[$]{2}/img, "<script>").replace(/[$]{2}#script[$]{2}/img, "</script>");
-            if (isnormaltable === false) {
-                data[val] = data[val].replace(re, "$1 onchange=\"ff.gridcellchange(this,'" + gridid + "'," + i + ",'" + val + "',0)\" />");
-                data[val] = data[val].replace(re2, "$1 onchange=\"ff.gridcellchange(this,'" + gridid + "'," + i + ",'" + val + "',1)\" >$2");
-            }
+          data[val] = data[val].replace(/[$]{2}script[$]{2}/img, "<script>").replace(/[$]{2}#script[$]{2}/img, "</script>");
+          if (isnormaltable === false) {
+            data[val] = data[val].replace(re, "$1 onchange=\"ff.gridcellchange(this,'" + gridid + "'," + i + ",'" + val + "',0)\" />");
+            data[val] = data[val].replace(re2, "$1 onchange=\"ff.gridcellchange(this,'" + gridid + "'," + i + ",'" + val + "',1)\" >$2");
+          }
         }
       }
     }
@@ -870,11 +903,11 @@ window.ff = {
 };
 
 $.ajax({
-    url: '/_framework/GetScriptLanguage',
-    type: 'GET',
-    success: function (data) {
-        for (val in data){
-            ff[val] = data[val];
-        }
+  url: '/_framework/GetScriptLanguage',
+  type: 'GET',
+  success: function (data) {
+    for (val in data) {
+      ff[val] = data[val];
     }
+  }
 });

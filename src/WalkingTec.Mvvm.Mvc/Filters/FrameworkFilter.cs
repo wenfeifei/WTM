@@ -54,6 +54,8 @@ namespace WalkingTec.Mvvm.Mvc.Filters
                 {
                     var model = item.Value as BaseVM;
                     model.Session = new SessionServiceProvider(context.HttpContext.Session);
+                    model.Cache = ctrl.Cache;
+                    model.LoginUserInfo = ctrl.LoginUserInfo;
                     model.DC = ctrl.DC;
                     model.MSD = new ModelStateServiceProvider(ctrl.ModelState);
                     model.FC = new Dictionary<string, object>();
@@ -238,8 +240,8 @@ namespace WalkingTec.Mvvm.Mvc.Filters
             var ctrlActDesc = context.ActionDescriptor as ControllerActionDescriptor;
             if (context.Result is PartialViewResult)
             {
-                var model = (context.Result as PartialViewResult).ViewData.Model as BaseVM;
-                if ((context.Result as PartialViewResult).ViewData.Model == null)
+                var model = (context.Result as PartialViewResult).ViewData?.Model as BaseVM;
+                if (model == null && (context.Result as PartialViewResult).ViewData != null)
                 {
                     model = ctrl.CreateVM<BaseVM>();
                     (context.Result as PartialViewResult).ViewData.Model = model;
@@ -283,8 +285,8 @@ namespace WalkingTec.Mvvm.Mvc.Filters
             }
             if (context.Result is ViewResult)
             {
-                var model = (context.Result as ViewResult).ViewData.Model as BaseVM;
-                if ((context.Result as ViewResult).ViewData.Model == null)
+                var model = (context.Result as ViewResult).ViewData?.Model as BaseVM;
+                if (model == null && (context.Result as ViewResult).ViewData != null)
                 {
                     model = ctrl.CreateVM<BaseVM>();
                     (context.Result as ViewResult).ViewData.Model = model;
@@ -296,6 +298,11 @@ namespace WalkingTec.Mvvm.Mvc.Filters
         public override void OnResultExecuted(ResultExecutedContext context)
         {
             var ctrl = context.Controller as IBaseController;
+            if (ctrl == null)
+            {
+                base.OnResultExecuted(context);
+                return;
+            }
             var ctrlActDesc = context.ActionDescriptor as ControllerActionDescriptor;
             //如果是来自Error，则已经记录过日志，跳过
             if (ctrlActDesc.ControllerName == "_Framework" && ctrlActDesc.ActionName == "Error")

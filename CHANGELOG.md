@@ -1,5 +1,76 @@
 # 更新日志
 
+## v3.1.x
+
+3.1版本正式发布，支持.netcore 3.1，与2.4.x最新版本在功能上同步更新
+
+
+## v2.4.x
+
+v2.4.5 (2020-1-4)
+本次为累积更新，修复了一个月以来issue上提出的主要bug
+* **修改：**  修复了获取PersistPoco的下拉选项时，没有过滤IsVaild=false的问题
+* **修改：**  修复了弹出窗口在手机上显示不全的问题
+* **修改：**  修复了UEditor单图上传错误的问题
+* **修改：**  修复当搜索条件只有一个时，在搜索框中按回车键会出现异常页面的问题
+* **修改：**  修复了Transfer 穿梭框显示问题的问题
+* **修改：**  修复了在form表达外使用ImageTagHelper 会获得一个异常的问题
+* **修改：**  修复了textbox加了padding-text之后tab无法切换的问题
+* **修改：**  修复了selector display="true"时，显示错误的问题
+* **修改：**  修复了使用一些第三方控件导致view无法显示的问题
+* **修改：**  修复了代码生成器中点击关闭按钮报错的问题
+* **修改：**  修复了连续三级空菜单没有隐藏的问题
+* **修改：**  React模式系统自带管理模块加入了中英文多语言
+
+* **新增：**  upload控件增加了进度条，通过设置ShowProgress可以选择是否显示（鸣谢 ‘阿拉斯没有家’同学 https://github.com/buffonlwx）
+* **新增：**  ListVM中的GridAction中增加了下载类型的按钮
+* **新增：**  BaseController中的CreateDC方法现在可以使用连接字符串的key，而不需要写死整个连接字符串
+* **新增：**  BaseController中的CreateDC方法现在可以指定数据库类型
+* **新增：**  菜单维护时外部菜单可以使用/aaa/bbb的形式来指定一个内部地址，这样方便大家把一个具体方法配置到左侧菜单上
+
+### v2.4.3 / v3.0.4 (2019-12-8)
+
+* **新增：**  增加多附件上传控件，特别鸣谢‘草监牛寺’同学，参见文档 https://wtmdoc.walkingtec.cn/#/UI/UploadMulti
+* **修改：**  Appsettings文件中增加了IsOldSqlServer配置，对于使用sqlserver 2008以前的用户使用
+* **修改：**  修复某些模型生成单元测试时的bug
+* **修改：**  修复自定义ID的模型attach时可能失败的bug
+* **修改：**  修复主子表操作时没有判断PersistPoco的bug
+
+
+### v2.4.2 (2019-11-22)
+
+* **修改：**  修复Add-Migration报错的问题
+* **修改：**  修复刷新菜单无效的问题
+* **修改：**  修复无法添加多级菜单的问题
+* **修改：**  修复在导出时SearchMode仍然为Search的问题
+* **修改：**  修复权限控制无法识别中文url的问题
+
+### v2.4.1 (2019-11-16)
+
+* **修改：**  修复同时使用Cookie和jwt登陆时报错的bug（不建议混合两种模式）
+
+#### 前后端不分离模式
+* **修改：**  修复Combobox联动由于没有图表而报错的bug
+
+#### React前后端分离模式
+* **新增：**  多语言支持
+* **修改：**  修复菜单地址bug
+* **修改：**  修复菜单管理，数去权限管理页面问题
+
+### v2.4.0 (2019-11-5)
+本次更新为大版本更新，废弃了之前Session的模式，使用Jwt和cookie两种方式进行登陆认证。
+框架目前支持Cookie和Jwt两种模式，继承BaseController和BaseApiController的控制器将默认支持Cookie模式。
+已有使用session认证的代码不需要修改，用户使用过程中并不会感觉到变化。
+用户可以通过[AuthorizeCookie],[AuthorizeJwt],[AuthorizeJwtWithCookie]三种标签来指定Controller的验证方式。
+详情请参考https://wtmdoc.walkingtec.cn/#/Global/jwt
+系统增加了persistedgrants表来存储jwt持久化信息，另外菜单的默认数据也发生了改变，建议已有系统重新生成数据库或手动同步数据库
+
+* **新增：**  Jwt支持
+* **新增：**  Swagger jwt支持
+* **修改：**  修复多语言验证信息bug
+* **修改：**  菜单管理支持不同Area下同名Controller的配置
+
+
 ## v2.3.x
 
 ### v2.3.9 (2019-10-19)

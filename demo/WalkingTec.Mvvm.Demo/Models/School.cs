@@ -2,8 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Threading.Tasks;
+
 using WalkingTec.Mvvm.Core;
 
 namespace WalkingTec.Mvvm.Demo.Models
@@ -31,6 +30,7 @@ namespace WalkingTec.Mvvm.Demo.Models
         [Required(ErrorMessage = "{0}是必填项")]
         public string SchoolName { get; set; }
 
+
         [Display(Name = "学校类型")]
         [Required(ErrorMessage = "{0}是必填项")]
         public SchoolTypeEnum? SchoolType { get; set; }
@@ -41,6 +41,18 @@ namespace WalkingTec.Mvvm.Demo.Models
 
         [Display(Name = "专业")]
         public List<Major> Majors { get; set; }
+
+        public List<SchoolPhoto> Photos { get; set; }
+    }
+
+    public class SchoolPhoto : TopBasePoco, ISubFile
+    {
+        public int SchoolId { get; set; }
+        public School School { get; set; }
+
+        public Guid FileId { get; set; }
+        public FileAttachment File { get; set; }
+        public int order { get; set; }
     }
 
 }

@@ -185,6 +185,7 @@ namespace WalkingTec.Mvvm.Core
             return rv;
         }
 
+
         /// <summary>
         /// 批量修改，默认对Ids中包含的数据进行修改，子类如果有特殊判断应重载本函数
         /// </summary>
@@ -228,11 +229,10 @@ namespace WalkingTec.Mvvm.Core
                         var val = FC.ContainsKey("LinkedVM." + pro.Name) ? FC["LinkedVM." + pro.Name] : null;
                         if (proToSet != null && val != null)
                         {
-                            var hasvalue = false;
-                            if (val is StringValues sv && StringValues.IsNullOrEmpty(sv) == false)
+                            var hasvalue = true;
+                            if ( val is StringValues sv && StringValues.IsNullOrEmpty(sv) == true)
                             {
-                                hasvalue = true;
-
+                                hasvalue = false;
                             }
                             if (hasvalue)
                             {

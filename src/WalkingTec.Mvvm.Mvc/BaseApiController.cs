@@ -1,18 +1,21 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Controllers;
-using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.Extensions.Caching.Memory;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
-using WalkingTec.Mvvm.Core;
-using WalkingTec.Mvvm.Core.Implement;
-using WalkingTec.Mvvm.Core.Extensions;
+
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Localization;
+
+using WalkingTec.Mvvm.Core;
+using WalkingTec.Mvvm.Core.Auth;
+using WalkingTec.Mvvm.Core.Extensions;
+using WalkingTec.Mvvm.Core.Implement;
 
 namespace WalkingTec.Mvvm.Mvc
 {
@@ -51,20 +54,22 @@ namespace WalkingTec.Mvvm.Mvc
             }
         }
 
-
-        private IMemoryCache _cache;
-        protected IMemoryCache Cache
+        private IDistributedCache _cache;
+        public IDistributedCache Cache
         {
             get
             {
                 if (_cache == null)
                 {
-                    _cache = (IMemoryCache)HttpContext.RequestServices.GetService(typeof(IMemoryCache));
+                    _cache = (IDistributedCache)HttpContext.RequestServices.GetService(typeof(IDistributedCache));
                 }
                 return _cache;
             }
+            set
+            {
+                _cache = value;
+            }
         }
-
 
         public string CurrentCS { get; set; }
 
@@ -87,18 +92,73 @@ namespace WalkingTec.Mvvm.Mvc
             }
         }
 
+        private LoginUserInfo _loginUserInfo;
         public LoginUserInfo LoginUserInfo
         {
             get
             {
-                return HttpContext.Session?.Get<LoginUserInfo>("UserInfo");
+                if (User?.Identity?.IsAuthenticated == true && _loginUserInfo == null) // 用户认证通过后，当前上下文不包含用户数据
+                {
+                    var userIdStr = User.Claims.FirstOrDefault(x => x.Type == AuthConstants.JwtClaimTypes.Subject).Value;
+                    Guid userId = Guid.Parse(userIdStr);
+                    var cacheKey = $"{GlobalConstants.CacheKey.UserInfo}:{userIdStr}";
+                    _loginUserInfo = Cache.Get<LoginUserInfo>(cacheKey);
+                    if (_loginUserInfo == null || _loginUserInfo.Id != userId)
+                    {
+                        var userInfo = DC.Set<FrameworkUserBase>()
+                                            .Include(x => x.UserRoles)
+                                            .Include(x => x.UserGroups)
+                                            .Where(x => x.ID == userId && x.IsValid == true)
+                                            .SingleOrDefault();
+                        if (userInfo != null)
+                        {
+                            // 初始化用户信息
+                            var roleIDs = userInfo.UserRoles.Select(x => x.RoleId).ToList();
+                            var groupIDs = userInfo.UserGroups.Select(x => x.GroupId).ToList();
+                            var dataPris = DC.Set<DataPrivilege>()
+                                            .Where(x => x.UserId == userInfo.ID || (x.GroupId != null && groupIDs.Contains(x.GroupId.Value)))
+                                            .ToList();
+
+                            //查找登录用户的页面权限
+                            var funcPrivileges = DC.Set<FunctionPrivilege>()
+                                .Where(x => x.UserId == userInfo.ID || (x.RoleId != null && roleIDs.Contains(x.RoleId.Value)))
+                                .ToList();
+
+                            _loginUserInfo = new LoginUserInfo
+                            {
+                                Id = userInfo.ID,
+                                ITCode = userInfo.ITCode,
+                                Name = userInfo.Name,
+                                PhotoId = userInfo.PhotoId,
+                                Roles = DC.Set<FrameworkRole>().Where(x => userInfo.UserRoles.Select(y => y.RoleId).Contains(x.ID)).ToList(),
+                                Groups = DC.Set<FrameworkGroup>().Where(x => userInfo.UserGroups.Select(y => y.GroupId).Contains(x.ID)).ToList(),
+                                DataPrivileges = dataPris,
+                                FunctionPrivileges = funcPrivileges
+                            };
+                            Cache.Add(cacheKey, _loginUserInfo);
+                        }
+                        else
+                        {
+                            HttpContext.ChallengeAsync().Wait();
+                            return null;
+                        }
+                    }
+                }
+                return _loginUserInfo;
             }
             set
             {
-                HttpContext.Session?.Set<LoginUserInfo>("UserInfo", value);
+                if (value == null)
+                {
+                    Cache.Delete($"{GlobalConstants.CacheKey.UserInfo}:{_loginUserInfo.Id}");
+                }
+                else
+                {
+                    Cache.Add($"{GlobalConstants.CacheKey.UserInfo}:{value.Id}", value);
+                }
+                _loginUserInfo = value;
             }
         }
-
 
         public string BaseUrl { get; set; }
         private IStringLocalizer _localizer;
@@ -152,6 +212,8 @@ namespace WalkingTec.Mvvm.Mvc
             }
             catch { }
             rv.ConfigInfo = ConfigInfo;
+            rv.Cache = Cache;
+            rv.LoginUserInfo = LoginUserInfo;
             rv.DataContextCI = GlobaInfo?.DataContextCI;
             rv.DC = this.DC;
             rv.MSD = new ModelStateServiceProvider(ModelState);
@@ -339,6 +401,11 @@ namespace WalkingTec.Mvvm.Mvc
         #endregion
 
         #region CreateDC
+        /// <summary>
+        /// Create a new datacontext with current connectionstring and current database type
+        /// </summary>
+        /// <param name="isLog">if true, use defaultlog connection string</param>
+        /// <returns>data context</returns>
         [NonAction]
         public virtual IDataContext CreateDC(bool isLog = false)
         {
@@ -348,6 +415,20 @@ namespace WalkingTec.Mvvm.Mvc
                 cs = "defaultlog";
             }
             return (IDataContext)GlobaInfo?.DataContextCI?.Invoke(new object[] { ConfigInfo?.ConnectionStrings?.Where(x => x.Key.ToLower() == cs).Select(x => x.Value).FirstOrDefault(), CurrentDbType ?? ConfigInfo.DbType });
+        }
+
+        /// <summary>
+        /// Create DataContext
+        /// </summary>
+        /// <param name="csName">ConnectionString key, "default" will be used if not set</param>
+        /// <param name="dbtype">DataBase type, appsettings dbtype will be used if not set</param>
+        /// <returns>data context</returns>
+        [NonAction]
+        public virtual IDataContext CreateDC(string csName, DBTypeEnum? dbtype=null)
+        {
+            string cs = csName ?? "default";
+            var dbt = dbtype ?? CurrentDbType;
+            return (IDataContext)GlobaInfo?.DataContextCI?.Invoke(new object[] { ConfigInfo?.ConnectionStrings?.Where(x => x.Key.ToLower() == cs).Select(x => x.Value).FirstOrDefault(), dbt ?? ConfigInfo.DbType });
         }
 
         #endregion
@@ -428,11 +509,14 @@ namespace WalkingTec.Mvvm.Mvc
                 T data = setFunc();
                 if (timeout == null)
                 {
-                    Cache.Set(key, data);
+                    Cache.Add(key, data);
                 }
                 else
                 {
-                    Cache.Set(key, data, DateTime.Now.AddSeconds(timeout.Value).Subtract(DateTime.Now));
+                    Cache.Add(key, data, new DistributedCacheEntryOptions()
+                    {
+                        SlidingExpiration = new TimeSpan(timeout.Value)
+                    });
                 }
                 return data;
             }

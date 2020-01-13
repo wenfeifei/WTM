@@ -12,6 +12,16 @@ using WalkingTec.Mvvm.Core.Extensions;
 
 namespace WalkingTec.Mvvm.Mvc
 {
+    public enum ApiAuthMode
+    {
+        [Display(Name = "Both Jwt and Cookie")]
+        Both,
+        [Display(Name = "Jwt")]
+        Jwt,
+        [Display(Name = "Cookie")]
+        Cookie
+    }
+
     [ReInit(ReInitModes.ALWAYS)]
     public class CodeGenVM : BaseVM
     {
@@ -25,6 +35,8 @@ namespace WalkingTec.Mvvm.Mvc
 
         [Display(Name = "GenApi")]
         public bool IsApi { get; set; }
+
+        public ApiAuthMode AuthMode { get; set; }
 
         public string ModelName
         {
@@ -59,9 +71,13 @@ namespace WalkingTec.Mvvm.Mvc
             {
                 if (_mainDir == null)
                 {
-                    int index = EntryDir?.IndexOf($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}Debug{Path.DirectorySeparatorChar}") ?? 0;
+                    int? index = EntryDir?.IndexOf($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}Debug{Path.DirectorySeparatorChar}");
+                    if(index == null || index < 0)
+                    {
+                        index = EntryDir?.IndexOf($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}Release{Path.DirectorySeparatorChar}")??0;
+                    }
 
-                    _mainDir = EntryDir?.Substring(0, index);
+                    _mainDir = EntryDir?.Substring(0, index.Value);
                 }
                 return _mainDir;
             }
@@ -412,6 +428,7 @@ namespace WalkingTec.Mvvm.Mvc
         public string GenerateController()
         {
             string dir = "";
+            string jwt = "";
             if (UI == UIEnum.LayUI && IsApi == false)
             {
                 dir = "Mvc";
@@ -419,8 +436,22 @@ namespace WalkingTec.Mvvm.Mvc
             if (UI == UIEnum.React || IsApi == true)
             {
                 dir = "Spa";
+                switch (AuthMode)
+                {
+                    case ApiAuthMode.Both:
+                        jwt = "[AuthorizeJwtWithCookie]";
+                        break;
+                    case ApiAuthMode.Jwt:
+                        jwt = "[AuthorizeJwt]";
+                        break;
+                    case ApiAuthMode.Cookie:
+                        jwt = "[AuthorizeCookie]";
+                        break;
+                    default:
+                        break;
+                }
             }
-            var rv = GetResource("Controller.txt", dir).Replace("$vmnamespace$", VMNs).Replace("$namespace$", ControllerNs).Replace("$des$", ModuleName).Replace("$modelname$", ModelName).Replace("$modelnamespace$", ModelNS).Replace("$controllername$", $"{ModelName}{(IsApi == true ? "Api" : "")}");
+            var rv = GetResource("Controller.txt", dir).Replace("$jwt$",jwt).Replace("$vmnamespace$", VMNs).Replace("$namespace$", ControllerNs).Replace("$des$", ModuleName).Replace("$modelname$", ModelName).Replace("$modelnamespace$", ModelNS).Replace("$controllername$", $"{ModelName}{(IsApi == true ? "Api" : "")}");
             if (string.IsNullOrEmpty(Area))
             {
                 rv = rv.Replace("$area$", "");
@@ -439,7 +470,7 @@ namespace WalkingTec.Mvvm.Mvc
                 for (int i = 0; i < pros.Count; i++)
                 {
                     var item = pros[i];
-                    if (item.InfoType == FieldInfoType.One2Many && item.SubField != "`file")
+                    if ((item.InfoType == FieldInfoType.One2Many || item.InfoType == FieldInfoType.Many2Many)  && item.SubField != "`file")
                     {
                         var subtype = Type.GetType(item.RelatedField);
                         var subpro = subtype.GetProperties().Where(x => x.Name == item.SubField).FirstOrDefault();
@@ -526,7 +557,7 @@ namespace WalkingTec.Mvvm.Mvc
                                 typename += "?";
                             }
                             break;
-                        case FieldInfoType.Many2Many:                            
+                        case FieldInfoType.Many2Many:
                             proname = $@"Selected{pro.FieldName}IDs";
                             typename = $"List<{pro.GetFKType(DC, modelType)}>";
                             break;
@@ -600,8 +631,10 @@ namespace WalkingTec.Mvvm.Mvc
                             }
                             else
                             {
+                                var middleType = modelType.GetProperty(pro.FieldName).PropertyType.GenericTypeArguments[0];
+                                var middlename = DC.GetPropertyNameByFk(middleType, pro.SubIdField);
                                 selectstring += $@"
-                    {pro.SubField + "_view" + prefix} = DC.Set<{subtype.Name}>().Where(y => x.{pro.FieldName}.Select(z => z.{pro.SubIdField}).Contains(y.ID)).Select(y => y.{pro.SubField}).ToSpratedString(null,"",""),";
+                    {pro.SubField + "_view" + prefix} = x.{pro.FieldName}.Select(y=>y.{middlename}.{pro.SubField}).ToSpratedString(null,"",""), ";
                             }
                             if (subdisplay?.Name != null)
                             {
@@ -1058,13 +1091,32 @@ namespace WalkingTec.Mvvm.Mvc
             var modelprops = t.GetRandomValues();
             var mname = t.Name?.Split(',').FirstOrDefault()?.Split('.').LastOrDefault() ?? "";
             string cpros = "";
+            string rv = "";
             foreach (var pro in modelprops)
             {
-                cpros += $@"
+                if (pro.Value == "$fk$")
+                {
+                    var fktype = t.GetProperties().Where(x => x.Name == pro.Key.Substring(0, pro.Key.Length - 2)).Select(x => x.PropertyType).FirstOrDefault();
+                    rv += GenerateAddFKModel(pro.Key.Substring(0, pro.Key.Length - 2), fktype);
+                }
+            }
+
+
+            foreach (var pro in modelprops)
+            {
+                if (pro.Value == "$fk$")
+                {
+                    cpros += $@"
+                v.{pro.Key} = Add{pro.Key.Substring(0, pro.Key.Length - 2)}();";
+                }
+                else
+                {
+                    cpros += $@"
                 v.{pro.Key} = {pro.Value};";
+                }
             }
             var idpro = t.GetProperties().Where(x => x.Name.ToLower() == "id").Select(x => x.PropertyType).FirstOrDefault();
-            string rv = $@"
+            rv += $@"
         private {idpro.Name} Add{keyname}()
         {{
             {mname} v = new {mname}();
@@ -1200,15 +1252,15 @@ namespace WalkingTec.Mvvm.Mvc
                         {
                             if (string.IsNullOrEmpty(item.SubIdField) == true)
                             {
-                                fieldstr.AppendLine($@"                formItem: <WtmSelect placeholder=""{label}"" 
-                    dataSource ={{ Request.cache({{ url: ""/api/{ModelName}/Get{subtype.Name}s"" }})}} 
+                                fieldstr.AppendLine($@"                formItem: <WtmSelect placeholder=""{label}""
+                    dataSource ={{ Request.cache({{ url: ""/api/{ModelName}/Get{subtype.Name}s"" }})}}
                 /> ");
                             }
                             else
                             {
                                 fieldstr.AppendLine($@"                formItem: <WtmTransfer
                     dataSource={{Request.cache({{ url: ""/api/{ModelName}/Get{subtype.Name}s"" }})}}
-                    dataKey=""{item.SubIdField}""
+                    mapKey=""{item.SubIdField}""
                 /> ");
 
                             }
@@ -1299,8 +1351,8 @@ namespace WalkingTec.Mvvm.Mvc
                         var subtype = Type.GetType(item.RelatedField);
                         if (string.IsNullOrEmpty(item.SubIdField) == true)
                         {
-                            fieldstr2.AppendLine($@"                formItem: <WtmSelect placeholder=""全部"" 
-                    dataSource ={{ Request.cache({{ url: ""/api/{ModelName}/Get{subtype.Name}s"" }})}} 
+                            fieldstr2.AppendLine($@"                formItem: <WtmSelect placeholder=""全部""
+                    dataSource ={{ Request.cache({{ url: ""/api/{ModelName}/Get{subtype.Name}s"" }})}}
                 /> ");
                         }
                         else

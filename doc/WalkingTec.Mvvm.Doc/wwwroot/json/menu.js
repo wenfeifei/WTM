@@ -24,7 +24,8 @@
                         { "name": "/CS", "title": "数据库分库", "jump": "/Global/CS" },
                         { "name": "/DP", "title": "数据权限", "jump": "/Global/DP" },
                         { "name": "/Route", "title": "路由", "jump": "/Global/Route" },
-                        { "name": "/Route", "title": "多语言", "jump": "/Global/MultiLanguages" }
+                        { "name": "/Route", "title": "多语言", "jump": "/Global/MultiLanguages" },
+                        { "name": "/Route", "title": "Jwt支持", "jump": "/Global/jwt" }
                    ]
                 },
                 {
@@ -54,7 +55,8 @@
                             ]
                         },
                         { "name": "/Import", "title": "导入VM", "jump": "/VM/Import" },
-                        { "name": "/Batch", "title": "批量操作VM", "jump": "/VM/Batch" }
+                        { "name": "/Batch", "title": "批量操作VM", "jump": "/VM/Batch" },
+                        { "name": "/Transaction", "title": "事务", "jump": "/VM/Transaction" }
                     ]
                 },
                 {
@@ -105,7 +107,8 @@
                                 { "name": "/Radio", "title": "Radio", "jump": "/UI/Radio" },
                                 { "name": "/DateTime", "title": "DateTime", "jump": "/UI/DateTime" },
                                 { "name": "/Upload", "title": "Upload", "jump": "/UI/Upload" },
-                                { "name": "/Selector", "title": "Selector", "jump": "/UI/Selector" },
+                                { "name": "/Upload", "title": "MultiUpload", "jump": "/UI/UploadMulti" },
+                               { "name": "/Selector", "title": "Selector", "jump": "/UI/Selector" },
                                 { "name": "/Rich", "title": "RichTextBox", "jump": "/UI/Rich" },
                                 { "name": "/UEditor", "title": "UEditor", "jump": "/UI/UEditor" }
                             ]
