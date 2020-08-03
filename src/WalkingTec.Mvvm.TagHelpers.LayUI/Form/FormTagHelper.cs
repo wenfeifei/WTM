@@ -80,7 +80,10 @@ namespace WalkingTec.Mvvm.TagHelpers.LayUI
             output.Attributes.SetAttribute("lay-filter", Id);
             if (LabelWidth != null)
             {
-                context.Items.Add("formlabelwidth", LabelWidth.Value);
+                if (context.Items.ContainsKey("formlabelwidth") == false)
+                {
+                    context.Items.Add("formlabelwidth", LabelWidth.Value);
+                }
             }
             if (context.Items.ContainsKey("model") == false)
             {
@@ -105,6 +108,7 @@ namespace WalkingTec.Mvvm.TagHelpers.LayUI
                 }
             }
 
+
             output.PostElement.AppendHtml($@"
 <script>
 ff.RenderForm('{Id}');
@@ -117,11 +121,24 @@ ff.RenderForm('{Id}');
 layui.use(['form'],function(){{
   layui.form.on('submit({Id}filter)', function(data){{
     if({BeforeSubmit ?? "true"} == false){{return false;}}
-    ff.PostForm('{output.Attributes["action"].Value}', '{Id}', '{baseVM?.ViewDivId}')
+    ff.PostForm('', '{Id}', '{baseVM?.ViewDivId}')
     return false;
   }});
 }})
 ");
+                output.PostElement.AppendHtml($@"
+var {Id}validate = false;
+layui.use(['form'],function(){{
+  layui.form.on('submit({Id}filterAuto)', function(data){{
+  {Id}validate = true;
+  return false;
+  }});
+}})
+");
+                output.PostContent.AppendHtml($@"
+<button class=""layui-hide"" id=""{Id}hidesubmit""  type=""submit"" lay-filter=""{Id}filterAuto"" lay-submit></button>
+");
+
             }
 
             //如果是 SearchPanel，并且指定了 OldPost，则提交整个表单，而不是只刷新 Grid 数据
@@ -130,7 +147,7 @@ layui.use(['form'],function(){{
                 output.PostElement.AppendHtml($@"
 $('#{search.SearchBtnId}').on('click', function () {{
     if({BeforeSubmit ?? "true"} == false){{return false;}}
-    ff.PostForm('{output.Attributes["action"].Value}', '{Id}', '{baseVM?.ViewDivId}')
+    ff.PostForm('', '{Id}', '{baseVM?.ViewDivId}')
     return false;
   }});
 ");
@@ -152,7 +169,7 @@ $('#{search.SearchBtnId}').on('click', function () {{
                             firstkey = key;
                         }
                         output.PostElement.AppendHtml($@"
-$(""#{Id}submiterrorholder"").before(""<div class='layui-input-block' style='text-align:left'><label style='color:red'>{error.ErrorMessage}</label></div>"");
+$(""#{Id}"").find(""button[type=submit]:first"").before(""<div class='layui-input-block' style='text-align:left'><label style='color:red'>{error.ErrorMessage}</label></div>"");
 ");
                     }
                     if (haserror == true)

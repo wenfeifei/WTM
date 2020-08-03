@@ -41,7 +41,7 @@ namespace WalkingTec.Mvvm.Doc.Controllers
             return Redirect("/QuickStart/Intro");
         }
 
-        [ActionDescription("捐赠名单")]
+        [ActionDescription("Donate")]
         public IActionResult DonateList()
         {
             return PartialView();
@@ -52,5 +52,34 @@ namespace WalkingTec.Mvvm.Doc.Controllers
         {
             return PartialView();
         }
+
+        [AllowAnonymous]
+        [ResponseCache(Duration = 3600)]
+        public github GetGithubInfo()
+        {
+            var rv = ReadFromCache<github>("githubinfo", () =>
+            {
+                var s = ConfigInfo.Domains["github"].CallAPI<github>("repos/dotnetcore/wtm", null, null, 60).Result;
+                return s;
+            }, 1800);
+
+            return rv;
+        }
+
+        [Public]
+        public string RefreshVersion()
+        {
+            Cache.Delete("nugetversion");
+            return "OK";
+        }
+
+        public class github
+        {
+            public int stargazers_count { get; set; }
+            public int forks_count { get; set; }
+            public int subscribers_count { get; set; }
+            public int open_issues_count { get; set; }
+        }
+
     }
 }

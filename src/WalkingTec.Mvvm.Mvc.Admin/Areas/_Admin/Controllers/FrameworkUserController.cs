@@ -112,13 +112,20 @@ namespace WalkingTec.Mvvm.Mvc.Admin.Controllers
         [HttpPost]
         public ActionResult Password(FrameworkUserVM vm)
         {
-            if (ModelState.Any(x=>x.Key == "Entity.Password" && x.Value.ValidationState == Microsoft.AspNetCore.Mvc.ModelBinding.ModelValidationState.Invalid))
+            var keys = ModelState.Keys.ToList();
+            foreach (var item in keys)
+            {
+                if(item != "Entity.Password")
+                {
+                    ModelState.Remove(item);
+                }
+            }
+            if (ModelState.IsValid == false)
             {
                 return PartialView(vm);
             }
             else
             {
-                ModelState.Clear();
                 vm.ChangePassword();
                 if (!ModelState.IsValid)
                 {
@@ -244,9 +251,7 @@ namespace WalkingTec.Mvvm.Mvc.Admin.Controllers
         [HttpPost]
         public IActionResult ExportExcel(FrameworkUserListVM vm)
         {
-            vm.SearcherMode = vm.Ids != null && vm.Ids.Count > 0 ? ListVMSearchModeEnum.CheckExport : ListVMSearchModeEnum.Export;
-            var data = vm.GenerateExcel();
-            return File(data, "application/vnd.ms-excel", $"Export_FrameworkUser_{DateTime.Now.ToString("yyyy-MM-dd")}.xls");
+            return vm.GetExportData();
         }
     }
 }

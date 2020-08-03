@@ -6,8 +6,8 @@ namespace WalkingTec.Mvvm.Core.Test
 {
     public class DataContext : FrameworkContext
     {
-        public DataContext(string cs, DBTypeEnum dbtype)
-             : base(cs, dbtype)
+        public DataContext(string cs, DBTypeEnum dbtype, string version=null)
+             : base(cs, dbtype,version)
         {
         }
 
@@ -25,5 +25,7 @@ namespace WalkingTec.Mvvm.Core.Test
         public DbSet<MajorTop> MajorTops { get; set; }
         public DbSet<StudentMajorTop> StudentMajorTops { get; set; }
 
+        public DbSet<GoodsSpecification> GoodsSpecifications { get; set; }
+        public DbSet<GoodsCatalog> GoodsCatalogs { get; set; }
     }
 }

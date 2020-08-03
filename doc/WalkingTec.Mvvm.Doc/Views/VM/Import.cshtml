@@ -1,3 +1,4 @@
+@model WalkingTec.Mvvm.Core.BaseVM
 <style>
     a {
         color: #01aaed
@@ -139,7 +140,7 @@ public class SchoolImportVM : BaseImportVM&ltSchoolTemplateVM, School&gt
             //循环数据把学校名称后面加个X
             foreach (var item in EntityList)
             {
-                EntityList.SchoolName += "X";
+                item.SchoolName += "X";
             }
             //调用父类方法进行保存，如果还有特殊需求，可以自己操作DC进行数据保存
             return base.BatchSaveData();
@@ -216,3 +217,6 @@ public class SchoolImportVM : BaseImportVM&ltSchoolTemplateVM, School&gt
         limit: 100, page: false
         });
     </script>
+<script>
+  $("#@Model.ViewDivId").parent().css("height", "auto");
+</script>

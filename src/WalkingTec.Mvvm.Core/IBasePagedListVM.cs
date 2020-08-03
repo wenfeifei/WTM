@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Data;
-using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
 
@@ -32,7 +30,7 @@ namespace WalkingTec.Mvvm.Core
         /// <summary>
         /// 页面动作
         /// </summary>
-        List<GridAction> GridActions { get; }
+        List<GridAction> GetGridActions();
 
         /// <summary>
         /// 查询并生成Excel
@@ -93,6 +91,16 @@ namespace WalkingTec.Mvvm.Core
         bool NeedPage { get; set; }
 
         /// <summary>
+        /// 允许导出Excel的最大行数，超过行数会分成多个文件，最多不能超过100万
+        /// </summary>
+        int ExportMaxCount { get; set; }
+
+        /// <summary>
+        /// 根据允许导出的Excel最大行数，算出最终导出的Excel个数
+        /// </summary>
+        int ExportExcelCount { get; set; }
+
+        /// <summary>
         /// 移除操作列
         /// </summary>
         void RemoveActionColumn(object root = null);
@@ -150,6 +158,7 @@ namespace WalkingTec.Mvvm.Core
         string DetailGridPrix { get; set; }
 
         void DoInitListVM();
+
         #endregion
 
     }

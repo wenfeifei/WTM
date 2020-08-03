@@ -66,8 +66,9 @@ export default class PageStore {
       this.PageState.tableLoading = false;
       return res;
     } catch (error) {
-      console.warn(error)
+      // console.warn(error)
       this.PageState.tableLoading = false;
+      throw error
     }
   }
   /** 详情 */
@@ -274,7 +275,7 @@ class PageObservable {
    * 删除
    * @param ids 
    */
-  onDelete(ids: string[]) {
+  onDelete(ids) {
     return this.Request.ajax({ ...this.options.Apis.delete, body: ids }).toPromise()
   }
   /**

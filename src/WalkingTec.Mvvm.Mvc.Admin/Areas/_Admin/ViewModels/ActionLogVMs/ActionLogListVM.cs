@@ -21,7 +21,7 @@ namespace WalkingTec.Mvvm.Mvc.Admin.ViewModels.ActionLogVMs
         {
             var header = new List<GridColumn<ActionLog>>();
 
-            header.Add(this.MakeGridHeader(x => x.LogType, 80).SetForeGroundFunc((entity)=> {
+            header.Add(this.MakeGridHeader(x => x.LogType, 100).SetForeGroundFunc((entity)=> {
                 if(entity.LogType == ActionLogTypesEnum.Exception)
                 {
                     return "FF0000";
@@ -35,7 +35,7 @@ namespace WalkingTec.Mvvm.Mvc.Admin.ViewModels.ActionLogVMs
             header.Add(this.MakeGridHeader(x => x.ActionName, 120));
             header.Add(this.MakeGridHeader(x => x.ITCode, 120));
             header.Add(this.MakeGridHeader(x => x.ActionUrl, 200));
-            header.Add(this.MakeGridHeader(x => x.ActionTime, 200).SetSort(true));
+            header.Add(this.MakeGridHeader(x => x.ActionTime, 200).SetSort(true).SetFormat((a, b) => a.ActionTime.ToString("yyyy-MM-dd HH:mm:ss")));
             header.Add(this.MakeGridHeader(x => x.Duration, 100).SetSort(true).SetForeGroundFunc((entity)=> {
                 if(entity.Duration <= 1)
                 {
@@ -51,7 +51,13 @@ namespace WalkingTec.Mvvm.Mvc.Admin.ViewModels.ActionLogVMs
                 }
             }).SetFormat((entity,v)=> { return ((double)v).ToString("f2"); }));
             header.Add(this.MakeGridHeader(x => x.IP, 120));
-            header.Add(this.MakeGridHeader(x => x.Remark));
+            header.Add(this.MakeGridHeader(x => x.Remark).SetFormat((a,b)=> {
+                if (SearcherMode == ListVMSearchModeEnum.Search && a.Remark?.Length > 30)
+                {
+                    a.Remark = a.Remark.Substring(0, 30) + "...";
+                }
+                return a.Remark;
+            }));
             header.Add(this.MakeGridHeaderAction(width: 120));
 
             return header;
@@ -65,7 +71,8 @@ namespace WalkingTec.Mvvm.Mvc.Admin.ViewModels.ActionLogVMs
                 //.CheckEqual(Searcher.LogType, x=>x.LogType)
                 .CheckContain(Searcher.LogType, x=>x.LogType)
                 .CheckContain(Searcher.IP, x=>x.IP)
-                .CheckBetween(Searcher.StartActionTime, Searcher.EndActionTime?.Date.AddDays(1), x=>x.ActionTime, includeMax:false)
+                .CheckBetween(Searcher.ActionTime?.GetStartTime(), Searcher.ActionTime?.GetEndTime(), x=>x.ActionTime, includeMax:false)
+                .CheckWhere(Searcher.Duration,x=>x.Duration >= Searcher.Duration)
                 .Select(x=>new ActionLog()
                 {
                     ID          = x.ID,

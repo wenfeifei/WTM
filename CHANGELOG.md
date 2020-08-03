@@ -1,11 +1,184 @@
 # 更新日志
 
+## v3.x.x （2.x.x同步更新）
+
+##3.6.9 以及 2.6.9 (2020-7-23)
+* **修改：**  修改了PersistPoco的假删除逻辑
+* **修改：**  修复了layui下使用TreeContainer搜索，搜索条件会消失的bug
+* **修改：**  导出excel时，如果时数字格式，现在会自动把excel的列设置成数值格式，方便再加工
+* **修改：**  修复了使用代码生成器生成api时会生成一些无用代码的bug
+* **修改：**  layui下<wt:grid>增加了line-height属性，可以指定行高，适合列表显示图片之类的情况使用
+* **修改：**  ListVM中DateTime类型的字段默认格式改回yyyy-MM-dd hh:mm:ss
+* **修改：**  修复了admin中修改用户密码，输入过长时显示的bug
+* **修改：**  修复VUE中代码生成列表搜索框默认控件数量不对的bug
+* **修改：**  修复VUE中列表没有充满屏幕的bug
+
+##3.6.8 以及 2.6.8 (2020-7-6)
+* **修改：**  增强了对oracle的支持，注：3.x版本的oracle仍然是beta版，可跑起框架，但可能有未知问题
+* **修改：**  修复了layui搜索相关的一些bug
+* **修改：**  代码生成器现在对于bool类型的变量在layui下默认使用<wt:switch>控件
+* **修改：**  ListVM中DateTime类型的字段默认使用yyyy-MM-dd的格式
+* **修改：**  appsettings中的UploadLimit修改为long类型，可是指定更大的数字
+* **修改：**  修复VUE中没有角色的用户登录时重复刷新的bug
+* **修改：**  修复VUE中列表没有充满屏幕的bug
+
+##3.6.7 以及 2.6.7 (2020-6-30)
+3.6.6/2.6.6 热更新
+
+##3.6.6 以及 2.6.6 (2020-6-30)
+* **修改：**  修复sqlserver bulk导入时枚举类型没有正确赋值的问题
+* **修改：**  Layui修复了Combobox，CheckBox，Radio等控件设定default-value无效的问题
+* **修改：**  Layui修复了Combobox禁用无效的问题
+* **修改：**  Layui修复了取消某个搜索条件仍然按之前条件搜索的问题
+* **修改：**  Layui修复了按钮组的显示问题
+* **修改：**  VUE修复了编辑后再添加id重复的问题
+* **修改：**  VUE修复了数据权限管理页面错误的问题
+* **修改：**  VUE和React修复了菜单有目录的情况下排序的问题
+* **修改：**  修改了一些多语言英文文本
+
+##3.6.5 以及 2.6.5 (2020-6-15)
+* **修改：**  修复操作列和菜单的多语言问题
+* **修改：**  修复一对多删除时某些情况下失败的问题
+* **修改：**  修复代码生成器生成的api单元测试报错的问题
+
+##3.6.4 以及 2.6.4 (2020-6-3)
+* **修改：**  修复了默认初始化数据找不到Action报错的问题
+* **修改：**  修复了代码生成器在关联多个外键的同名字段时，生成的列表显示错误的问题
+* **修改：**  修复了权限认证时没有正确处理Async方法的问题
+* **修改：**  修复了LayUI模式下SetBindVisiableColName失效的问题
+* **修改：**  修复了VUE模式下菜单模块的多语言显示错误的问题
+* **修改：**  修复了React模式下一些文字错误
+
+##3.6.3 以及 2.6.3 (2020-5-26)
+* **修改：**  修复了上一版本引发的搜索报错的问题
+* **修改：**  修复了bulk导入的一个小bug
+* **修改：**  代码生成器生成页面时加入了多语言，老项目请在_ViewImports.cshtml文件中加入一行 @using Microsoft.Extensions.Localization;
+
+##3.6.2 以及 2.6.2 (2020-5-25)
+* **修改：**  修复了包含自定义列名的模型导入失败的bug
+* **修改：**  修复了Index页面没有正确判断页面权限的bug
+* **修改：**  现在Searcher也可以写Validate方法，查询条件后台返回的错误可以正确显示
+* **修改：**  修复了控制台Log没有显示时间的bug
+* **修改：**  修复了React和Vue配置页面权限的文字错误
+
+##3.6.1 以及 2.6.1 (2020-5-22)
+3.6.0/2.6.0 的热更新，修复代码生成器生成Controller的一个bug
+
+##3.6.0 以及 2.6.0 (2020-5-22)
+* **新增：**  导出优化，支持xlsx格式，单个excel文件现在最大可导出100万行，可设置单个文件最大行数，超过最大行数时会自动下载包含多个excel文件的zip包。详情请参见文档https://wtmdoc.walkingtec.cn/#/VM/Export
+* **新增：**  导入优化，支持xlsx格式，支持公式，使用sqlserver时自动使用bulk导入，提高大批量数据的导入速度。
+* **新增：**  ListVM中的MakeGridHeader方法现在可以正确绑定任何其定义lambda表达式
+* **新增：**  修复有关联关系的数据无法正常删除的bug
+* **修改：**  Layui模式中所有按钮的TagHelper现在都可以指定confirm-text来弹出一个询问框
+* **修改：**  Layui模式修复默认下载按钮失效的bug
+* **修改：**  Layui模式修复Display TagHelper绑定附件时显示错误的bug
+* **修改：**  React模式修复代码生成器生成一对多控件时的问题
+* **修改：**  Vue模式增加多语言支持
+* **修改：**  VUE模式修复一些近期反馈的小bug
+
+
+
+##3.5.7 以及 2.5.7 (2020-5-6)
+* **新增：**  SubmitButton中新增SubmitUrl属性，用于多个提交按钮提交到不同的地址
+* **新增：**  BaseController和BaseApiController增加可重写的GetLoginUserInfo方法，用于自定义用户认证
+* **修改：**  优化认证逻辑，加快响应速度
+* **修改：**  修复jwt无效时返回登录界面的错误，现在可以正确返回401，修复jwt token过期时间不准确的问题
+* **修改：**  完善多语言支持
+* **修改：**  修复DoDelete和SetInclude冲突的bug
+* **修改：**  VUE修复菜单空目录bug
+* **修改：**  VUE修复权限配置和搜索的bug
+* **修改：**  React完善多语言支持
+
+##3.5.6 以及 2.5.5 (2020-4-13)
+* **新增：**  ConnectionString配置中可以设置Version字段，用于控制mysql的具体版本
+* **修改：**  移除了动态控制器，因为和动态编译页面产生冲突
+* **修改：**  IsFilePublic现在可以正常工作
+* **修改：**  更新了默认生成的VUE项目代码，修复了一些bug
+
+##3.5.4 以及 2.5.4 (2020-4-3)
+* **新增：**  新增了动态控制器，老项目需要手动在Project文件的 \<PropertyGroup\>中加入\<PreserveCompilationReferences>true</PreserveCompilationReferences\>节点
+
+* **修改：**  修复vue代码生成没有正确生成某些api的bug
+* **修改：**  修复vue自带系统管理中的一些bug，整体更稳定
+* **修改：**  IsFilePublic配置在3.x下可以正常工作
+* **修改：**  修复框架自带GetFile和ViewFile方法无法正常调用的bug
+
+##3.5.2 以及 2.5.2 (2020-3-29)
+* **修改：**  修复vue代码生成下拉菜单少了一个逗号的bug
+* **修改：**  修复vue发布时的问题
+* **修改：**  修复vue列表高度计算的问题
+* **修改：**  修复vue数据权限列表的删除bug
+
+* **新增：**  Layui. 现在ListVM中的GridAction可以通过SetButtonClass方法设置按钮颜色
+* **新增：**  Layui. UIService中新增MakeButton方法替换之前有问题的MakeRedirectButton方法
+* **修改：**  修复GetGridActions会被调用两次的问题（这其实是.netcore的bug...)
+
+
+##3.5.1 以及 2.5.1 (2020-3-26)
+* **修改：**  修复vue菜单相关的一些bug
+* **修改：**  修复vue代码生成器对于布尔值的控件生成的bug
+* **修改：**  修复vue代码生成器对于下拉菜单生成的bug
+
+##3.5.0 以及 2.5.0 发布，你心心念的Vue来了！！！vue目前还属于预览版，欢迎大家多提宝贵意见
+* **新增：**  现在官网可以生成Vue的项目了
+* **新增：**  VUE项目可以使用和Layui，React相同的代码生成
+* **新增：**  appsettings文件中增加了Domains的配置，用来注册httpclient。在Controller和VM中通过ConfigInfo.Domains["key"].CallAPI来方便高效的调用其他网站的api
+* **修改：**  修复代码生成器会将bool的搜索条件啊生成两次的bug
+* **修改：**  修复继承自TopBasePoco的Model在DoAdd中没有正确的添加子表数据的bug
+* **修改：**  修复用户没有权限时没有正确返回401错误的bug
+
 ## v3.1.x
 
 3.1版本正式发布，支持.netcore 3.1，与2.4.x最新版本在功能上同步更新
 
 
 ## v2.4.x
+
+v2.4.9(2020-3-15)
+* **修改：**  重构日志，使用.netcore默认的日志记录流程和规则。 在.ConfigureLogging中可以使用AddWTMLogger来添加WTM的日志功能，并可以在appsetting文件中配置Logging来指定需要记录日志的级别，就像你操作其他Console，Debug这些日志一样。
+* **修改：**  修复layui下日期控件默认显示当前日期的问题
+* **修改：**  修复form和其中的searchpanel同时指定label-width会报错的问题
+* **修改：**  代码生成现在会默认为DateTime类型的搜索条件生成时间区间的搜索
+* **修改：**  修复了jwt认证失败没有正确返回401的问题
+
+v2.4.7(2020-3-9)
+
+* **新增：**  现在Layui模式下列表可以列筛选和打印
+* **新增：**  现在ListVM中的Action按钮可以通过SetPromptMessage设置询问对话框
+* **新增：**  现在数据权限可以识别多对多和树形结构
+
+* **修改：**  修改了新生成的项目LoginVM和RegVM错位的问题
+* **修改：**  修复了设置不分页不起作用的bug
+* **修改：**  修改了view强制要求model继承BaseVM的bug
+* **修改：**  修复了Combobox在disable状态下的显示问题
+* **修改：**  修复了代码生成器在多个DataContext时候的生成问题
+* **修改：**  修复了SearchPanel中Combobox多选时提交数据错误的问题
+
+v2.4.6(2020-2-22)
+本次更新加入了在连接字符串上指定数据库类型和DataContext的功能，并修复了近一阶段的bug。
+* **新增：**  现在在appsettings中的ConnectionStrings里面可以指定每一个连接字符串的DbType和DbContext
+* **新增：**  现在新增了一个EmptyContext基类，FrameworkContext会包含框架自带的表，而EmptyContext不会，这对于我们使用WTM连接其他系统的数据库十分有用
+* **注意：**  老版本升级时需要在DataContext文件中加入一个新的构造函数：
+        public DataContext(CS cs)
+             : base(cs)
+        {
+        }
+* **新增：**  增加了NoLog标记，用来指定某个方法不记录系统日志
+* **修改：**  移除了不必要的验证，提升webapi的响应速度
+* **新增：**  Layui模式下登陆页面新增了用户注册的演示页面
+* **修改：**  修复了layui模式下autocomplete textbox在有初始值时的js错误
+* **修改：**  修复了layui模式下可编辑grid表头错位的bug
+* **修改：**  修复了PIndex页面的js错误
+* **修改：**  移除了React模式下对node-sass的依赖
+* **修改：**  移除了React模式下数据权限管理的bug
+* **修改：**  修复了WebApi在非调试模式下权限认证的bug
+* **修改：**  修复了代码生成器生成React菜单的bug
+* **修改：**  修复了代码生成器生成标记了[Range(xxx.Max)]字段的bug
+
+
+
+
+
 
 v2.4.5 (2020-1-4)
 本次为累积更新，修复了一个月以来issue上提出的主要bug

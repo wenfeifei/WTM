@@ -7,6 +7,7 @@ using System.Linq.Expressions;
 using System.Transactions;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
 
 namespace WalkingTec.Mvvm.Core.Extensions
 {
@@ -61,9 +62,9 @@ namespace WalkingTec.Mvvm.Core.Extensions
             //处理后面要使用的expression
             if (valueField == null)
             {
-                valueField = x => x.ID.ToString();
+                valueField = x => x.GetID().ToString().ToLower();
             }
-            Expression<Func<T, string>> parentField = x => x.ParentId.ToString();
+            Expression<Func<T, string>> parentField = x => x.ParentId.ToString().ToLower();
 
             //定义PE
             ParameterExpression pe = Expression.Parameter(typeof(T));
@@ -176,7 +177,7 @@ namespace WalkingTec.Mvvm.Core.Extensions
             , List<DataPrivilege> dps
             , Expression<Func<T, bool>> whereCondition
             , Expression<Func<T, string>> textField
-            , Expression<Func<T, string>> valueField = null
+            , Expression<Func<T, object>> valueField = null
             , bool ignorDataPrivilege = false
             , bool SortByName = true)
             where T : TopBasePoco
@@ -191,7 +192,7 @@ namespace WalkingTec.Mvvm.Core.Extensions
             //如果value字段为空，则默认使用Id字段作为value值
             if (valueField == null)
             {
-                valueField = x => x.GetID().ToString().ToLower();
+                valueField = x => x.GetID();
             }
 
             //如果没有指定忽略权限，则拼接权限过滤的where条件
@@ -361,14 +362,31 @@ namespace WalkingTec.Mvvm.Core.Extensions
             //循环所有关联外键
             foreach (var IdField in IdFields)
             {
+                bool mtm = false;
                 Expression exp = trueExp;
                 //将外键Id用.分割，循环生成指向最终id的表达式，比如x=> x.a.b.Id
                 var fullname = IdField.GetPropertyName();
                 string[] splits = fullname.Split('.');
-                Expression peid = Expression.PropertyOrField(pe, splits[0]);
-                for (int i = 1; i < splits.Length; i++)
+                int leftindex = splits[0].IndexOf('[');
+                if(leftindex > 0)
                 {
-                    peid = Expression.PropertyOrField(peid, splits[i]);
+                    mtm = true;
+                    splits[0] = splits[0].Substring(0, leftindex);
+                }
+                Expression peid = Expression.PropertyOrField(pe, splits[0]);
+                Type middletype = null;
+                if (mtm)
+                {
+                    middletype = peid.Type.GetGenericArguments()[0];
+
+                }
+                else
+                {
+                    for (int i = 1; i < splits.Length; i++)
+                    {
+                        peid = Expression.PropertyOrField(peid, splits[i]);
+                    }
+                    middletype = (peid as MemberExpression).Member.DeclaringType;
                 }
                 //如果dps为空，则拼接一个返回假的表达式，这样就查询不出任何数据
                 if (dps == null)
@@ -382,8 +400,9 @@ namespace WalkingTec.Mvvm.Core.Extensions
                     if (fieldName.ToLower() != "id")
                     {
                         fieldName = fieldName.Remove(fieldName.Length - 2);
+                        var typeinfo = middletype.GetProperty(fieldName);
                         //var IsTableName = tableName?.Where(x => x == fieldName).FirstOrDefault();
-                        var IsTableName = tableName?.Where(x => x.ToLower().Contains(fieldName.ToLower())).FirstOrDefault();
+                        var IsTableName = tableName?.Where(x => x.ToLower() == typeinfo.PropertyType.Name.ToLower()).FirstOrDefault();
                         if (string.IsNullOrEmpty(IsTableName))
                         {
                             continue;
@@ -408,14 +427,15 @@ namespace WalkingTec.Mvvm.Core.Extensions
                     //如果没有关联的id，则拼接一个返回假的where，是语句查询不到任何数据
                     if (ids == null || ids.Count() == 0)
                     {
-                        if (peid.Type == typeof(Guid))
-                        {
-                            exp = Expression.Equal(peid, Expression.Constant(Guid.NewGuid()));
-                        }
-                        else
-                        {
-                            exp = Expression.Equal(peid, Expression.Constant(null));
-                        }
+                        exp = falseExp;
+                        //if (peid.Type == typeof(Guid))
+                        //{
+                        //    exp = Expression.Equal(peid, Expression.Constant(Guid.NewGuid()));
+                        //}
+                        //else
+                        //{
+                        //    exp = Expression.Equal(peid, Expression.Constant(null));
+                        //}
                     }
                     //如果有关联 Id
                     else
@@ -424,8 +444,31 @@ namespace WalkingTec.Mvvm.Core.Extensions
                         //如果关联 Id 包括null，则代表可以访问所有数据，就不需要再拼接where条件了
                         if (!ids.Contains(null))
                         {
+                            if (mtm == true)
+                            {
+                                ParameterExpression midpe = Expression.Parameter(middletype);
+                                Expression middleid = Expression.PropertyOrField(midpe, IdField.GetPropertyName(false));
 
-                            exp = ids.GetContainIdExpression<T>(peid).Body;
+                                var queryable = Expression.Call(
+                                     typeof(Queryable),
+                                     "AsQueryable",
+                                     new Type[] { middletype },
+                                     peid);
+
+                                List<Guid> ddd = new List<Guid>();
+
+                                exp = Expression.Call(
+                                     typeof(Queryable),
+                                     "Any",
+                                     new Type[] { middletype },
+                                     queryable,
+                                     Expression.Lambda(typeof(Func<,>).MakeGenericType(middletype,typeof(bool)), ids.GetContainIdExpression(middletype,midpe, middleid).Body, new ParameterExpression[] { midpe }));
+
+                            }
+                            else
+                            {
+                                exp = ids.GetContainIdExpression<T>(peid).Body;
+                            }
                         }
                     }
                 }
@@ -689,7 +732,7 @@ where S : struct
 
         public static IQueryable<T> CheckContain<T, S>(this IQueryable<T> baseQuery, List<S> val, Expression<Func<T, S>> field)
         {
-            if (val == null || val.Count == 0)
+            if (val == null || val.Count == 0 || (val.Count == 1 && val[0] == null))
             {
                 return baseQuery;
             }
@@ -705,7 +748,14 @@ where S : struct
 
         public static string GetTableName<T>(this IDataContext self)
         {
-            return self.Model.FindEntityType(typeof(T)).SqlServer().TableName;
+            if (self.DBType == DBTypeEnum.PgSql)
+            {
+                return self.Model.FindEntityType(typeof(T)).Npgsql().TableName;
+            }
+            else
+            {
+                return self.Model.FindEntityType(typeof(T)).SqlServer().TableName;
+            }
         }
 
         /// <summary>
@@ -787,6 +837,40 @@ where S : struct
             }
         }
 
+        public static string GetFieldName<T>(this IDataContext self, Expression<Func<T, object>> field)
+        {
+            string pname = field.GetPropertyName();
+            return self.GetFieldName<T>(pname);
+        }
+
+
+        public static string GetFieldName<T>(this IDataContext self, string fieldname)
+        {
+            var rv = self.Model.FindEntityType(typeof(T)).FindProperty(fieldname);
+            if(rv == null)
+            {
+                return "";
+            }
+            switch (self.DBType)
+            {
+                case DBTypeEnum.SqlServer:
+                    return rv.SqlServer().ColumnName;
+                case DBTypeEnum.MySql:
+                    return rv.MySql().ColumnName;
+                case DBTypeEnum.PgSql:
+                    return rv.Npgsql().ColumnName;
+                case DBTypeEnum.Memory:
+                    return rv.SqlServer().ColumnName;
+                case DBTypeEnum.SQLite:
+                    return rv.Sqlite().ColumnName;
+                case DBTypeEnum.Oracle:
+                    return rv.Oracle().ColumnName;
+                default:
+                    return rv.SqlServer().ColumnName;
+            }
+
+        }
+
         public static string GetPropertyNameByFk(this IDataContext self, Type sourceType, string fkname)
         {
             try
@@ -810,15 +894,39 @@ where S : struct
 
         public static Expression<Func<TModel, bool>> GetContainIdExpression<TModel>(this List<string> Ids, Expression peid = null)
         {
+            //if (Ids == null)
+            //{
+            //    Ids = new List<string>();
+            //}
+
+            //ParameterExpression pe = Expression.Parameter(typeof(TModel));
+            //if (peid == null)
+            //{
+            //    peid = Expression.Property(pe, typeof(TModel).GetProperties().Where(x => x.Name.ToLower() == "id").FirstOrDefault());
+            //}
+            //List<object> newids = new List<object>();
+            //foreach (var item in Ids)
+            //{
+            //    newids.Add(PropertyHelper.ConvertValue(item, peid.Type));
+            //}
+            //Expression dpleft = Expression.Constant(newids, typeof(IEnumerable<object>));
+            //Expression dpleft2 = Expression.Call(typeof(Enumerable), "Cast", new Type[] { peid.Type }, dpleft);
+            //Expression dpleft3 = Expression.Call(typeof(Enumerable), "ToList", new Type[] { peid.Type }, dpleft2);
+            //Expression dpcondition = Expression.Call(typeof(Enumerable), "Contains", new Type[] { peid.Type }, dpleft3, peid);
+            ParameterExpression pe = Expression.Parameter(typeof(TModel));
+            var rv = Ids.GetContainIdExpression(typeof(TModel), pe,peid) as Expression<Func<TModel, bool>>;
+            return rv;
+        }
+
+        public static LambdaExpression GetContainIdExpression(this List<string> Ids, Type modeltype, ParameterExpression pe, Expression peid = null )
+        {
             if (Ids == null)
             {
                 Ids = new List<string>();
             }
-
-            ParameterExpression pe = Expression.Parameter(typeof(TModel));
             if (peid == null)
             {
-                peid = Expression.Property(pe, typeof(TModel).GetProperties().Where(x => x.Name.ToLower() == "id").FirstOrDefault());
+                peid = Expression.Property(pe, modeltype.GetProperties().Where(x => x.Name.ToLower() == "id").FirstOrDefault());
             }
             List<object> newids = new List<object>();
             foreach (var item in Ids)
@@ -829,9 +937,10 @@ where S : struct
             Expression dpleft2 = Expression.Call(typeof(Enumerable), "Cast", new Type[] { peid.Type }, dpleft);
             Expression dpleft3 = Expression.Call(typeof(Enumerable), "ToList", new Type[] { peid.Type }, dpleft2);
             Expression dpcondition = Expression.Call(typeof(Enumerable), "Contains", new Type[] { peid.Type }, dpleft3, peid);
-            var rv = Expression.Lambda<Func<TModel, bool>>(dpcondition, pe);
+            var rv = Expression.Lambda(typeof(Func<,>).MakeGenericType(modeltype, typeof(bool)), dpcondition, pe);
             return rv;
         }
+
 
         /// <summary>
         /// 开始一个事务，当使用同一IDataContext时，嵌套的两个事务不会引起冲突，当嵌套的事务执行时引起的异常会通过回滚方法向上层抛出异常

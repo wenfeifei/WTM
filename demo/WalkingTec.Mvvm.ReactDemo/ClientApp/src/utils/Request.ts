@@ -37,7 +37,7 @@ export class Request {
         if (typeof target === "string") {
             this.target = target;
         }
-        this.getHeaders();
+        // this.getHeaders();
     }
     /** 
      * 请求路径前缀
@@ -47,10 +47,7 @@ export class Request {
      * 获取 认证 token请求头
      */
     getHeaders() {
-        return {
-            ...GlobalConfig.headers,
-            token: GlobalConfig.token.get()
-        }
+        return GlobalConfig.getHeaders()
     }
 
     /**
@@ -80,16 +77,16 @@ export class Request {
                     // 数据 Response 
                     if (ajax instanceof AjaxResponse) {
                         // 无 响应 数据
-                        if (lodash.isNil(ajax.response)) {
-                            console.warn(`未解析到 response ${ajax.request.url}`, ajax)
-                            GlobalConfig.development && notification.warn({
-                                message: "未解析到 response ",
-                                duration: 5,
-                                description: `url:${lodash.get(ajax, "request.url")}`
-                            })
-                            sub.error({})
-                            return false
-                        }
+                        //if (lodash.isNil(ajax.response)) {
+                        //    console.warn(`未解析到 response ${ajax.request.url}`, ajax)
+                        //    GlobalConfig.development && notification.warn({
+                        //        message: "未解析到 response ",
+                        //        duration: 5,
+                        //        description: `url:${lodash.get(ajax, "request.url")}`
+                        //    })
+                        //    sub.error({})
+                        //    return false
+                        //}
                         return true
                     }
                     // 错误
@@ -140,7 +137,7 @@ export class Request {
                     }
                     switch (res.status) {
                         case 200:
-                            return res.response
+                            return res.response || true
                         default:
                             notification.warn({
                                 message: getLocalesValue(`tips.status.${res.status}`, `请配置 状态 ${res.status} 处理逻辑`),
@@ -212,7 +209,7 @@ export class Request {
      */
     ajax(urlOrRequest: string | AjaxRequest) {
         if (lodash.isString(urlOrRequest)) {
-            return this.AjaxObservable(ajax(this.get({ url: urlOrRequest })))
+            return this.AjaxObservable(ajax(this.get({ url: urlOrRequest, headers: this.getHeaders() })))
         }
         urlOrRequest.headers = { ...this.getHeaders(), ...urlOrRequest.headers };
         switch (lodash.toLower(urlOrRequest.method)) {

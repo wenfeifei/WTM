@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -14,7 +15,7 @@ namespace WalkingTec.Mvvm.Core
     /// 单表增删改查VM的接口
     /// </summary>
     /// <typeparam name="T">继承TopBasePoco的类</typeparam>
-    public interface IBaseCRUDVM<out T> where T : TopBasePoco
+    public interface IBaseCRUDVM<out T> where T : TopBasePoco,new()
     {
         T Entity { get; }
         /// <summary>
@@ -73,9 +74,10 @@ namespace WalkingTec.Mvvm.Core
     /// 单表增删改查基类，所有单表操作的VM应该继承这个基类
     /// </summary>
     /// <typeparam name="TModel">继承TopBasePoco的类</typeparam>
-    public class BaseCRUDVM<TModel> : BaseVM, IBaseCRUDVM<TModel> where TModel : TopBasePoco
+    public class BaseCRUDVM<TModel> : BaseVM, IBaseCRUDVM<TModel> where TModel : TopBasePoco,new()
     {
         public TModel Entity { get; set; }
+        [JsonIgnore]
         public bool ByPassBaseValidation { get; set; }
 
         //保存读取时Include的内容
@@ -277,7 +279,7 @@ namespace WalkingTec.Mvvm.Core
                     //获取xxx的类型
                     var ftype = pro.PropertyType.GenericTypeArguments.First();
                     //如果xxx继承自TopBasePoco
-                    if (ftype.IsSubclassOf(typeof(BasePoco)))
+                    if (ftype.IsSubclassOf(typeof(TopBasePoco)))
                     {
                         //界面传过来的子表数据
                         IEnumerable<TopBasePoco> list = pro.GetValue(Entity) as IEnumerable<BasePoco>;
@@ -547,7 +549,7 @@ namespace WalkingTec.Mvvm.Core
                                 DC.AddEntity(item);
                             }
                         }
-                        else if (FC.Keys.Contains("Entity." + pro.Name + ".DONOTUSECLEAR") || (pro.GetValue(Entity) is IEnumerable<TopBasePoco> list2 && list2?.Count() == 0))
+                        else if (FC.Keys.Contains("Entity." + pro.Name + ".DONOTUSECLEAR") || (FC.ContainsKey("Entity."+pro.Name) && pro.GetValue(Entity) is IEnumerable<TopBasePoco> list2 && list2?.Count() == 0))
                         {
                             PropertyInfo[] itemPros = ftype.GetProperties();
                             var _entity = DC.Set<TModel>().Include(pro.Name).AsNoTracking().CheckID(Entity.GetID()).FirstOrDefault();
@@ -601,7 +603,7 @@ namespace WalkingTec.Mvvm.Core
                         {
                             DC.UpdateProperty(Entity, name);
                         }
-                        catch (Exception)
+                        catch (Exception ea)
                         {
                         }
                     }
@@ -632,18 +634,10 @@ namespace WalkingTec.Mvvm.Core
             //如果是PersistPoco，则把IsValid设为false，并不进行物理删除
             if (typeof(TModel).GetTypeInfo().IsSubclassOf(typeof(PersistPoco)))
             {
+                FC.Add("Entity.IsValid", 0);
                 (Entity as PersistPoco).IsValid = false;
-                (Entity as PersistPoco).UpdateTime = DateTime.Now;
-                (Entity as PersistPoco).UpdateBy = LoginUserInfo?.ITCode;
-                DC.UpdateEntity(Entity);
-                try
-                {
-                    DC.SaveChanges();
-                }
-                catch (DbUpdateException)
-                {
-                    MSD.AddModelError("", "数据使用中，无法删除");
-                }
+                DoEditPrepare(false);
+                DC.SaveChanges();
             }
             //如果是普通的TopBasePoco，则进行物理删除
             else if (typeof(TModel).GetTypeInfo().IsSubclassOf(typeof(TopBasePoco)))
@@ -660,14 +654,16 @@ namespace WalkingTec.Mvvm.Core
                 (Entity as PersistPoco).IsValid = false;
                 (Entity as PersistPoco).UpdateTime = DateTime.Now;
                 (Entity as PersistPoco).UpdateBy = LoginUserInfo?.ITCode;
-                DC.UpdateEntity(Entity);
+                DC.UpdateProperty(Entity, "IsValid");
+                DC.UpdateProperty(Entity, "UpdateTime");
+                DC.UpdateProperty(Entity, "UpdateBy");
                 try
                 {
                     await DC.SaveChangesAsync();
                 }
                 catch (DbUpdateException)
                 {
-                    MSD.AddModelError("", "数据使用中，无法删除");
+                    MSD.AddModelError("", Program._localizer["DeleteFailed"]);
                 }
             }
             //如果是普通的TopBasePoco，则进行物理删除
@@ -686,6 +682,65 @@ namespace WalkingTec.Mvvm.Core
             {
                 List<Guid> fileids = new List<Guid>();
                 var pros = typeof(TModel).GetProperties();
+
+                //如果包含附件，则先删除附件
+                var fa = pros.Where(x => x.PropertyType == typeof(FileAttachment) || typeof(TopBasePoco).IsAssignableFrom(x.PropertyType)).ToList();
+                foreach (var f in fa)
+                {
+                    if (f.GetValue(Entity) is FileAttachment file)
+                    {
+                        fileids.Add(file.ID);
+                    }
+                    f.SetValue(Entity, null);
+                }
+
+                var fas = pros.Where(x => typeof(IEnumerable<ISubFile>).IsAssignableFrom(x.PropertyType)).ToList();
+                foreach (var f in fas)
+                {
+                    var subs = f.GetValue(Entity) as IEnumerable<ISubFile>;
+                    if (subs != null)
+                    {
+                        foreach (var sub in subs)
+                        {
+                            fileids.Add(sub.FileId);
+                        }
+                        f.SetValue(Entity, null);
+                    }
+                }
+                if (typeof(TModel) != typeof(FileAttachment))
+                {
+                    foreach (var pro in pros)
+                    {
+                        if (pro.PropertyType.GetTypeInfo().IsSubclassOf(typeof(TopBasePoco)))
+                        {
+                            pro.SetValue(Entity, null);
+                        }
+                    }
+                }
+                DC.DeleteEntity(Entity);
+                DC.SaveChanges();
+                foreach (var item in fileids)
+                {
+                    FileAttachmentVM ofa = new FileAttachmentVM();
+                    ofa.CopyContext(this);
+                    ofa.SetEntityById(item);
+                    ofa.DoDelete();
+                }
+            }
+            catch (Exception)
+            {
+                MSD.AddModelError("", Program._localizer["DeleteFailed"]);
+            }
+        }
+
+
+        public virtual async Task DoRealDeleteAsync()
+        {
+            try
+            {
+                List<Guid> fileids = new List<Guid>();
+                var pros = typeof(TModel).GetProperties();
+
                 //如果包含附件，则先删除附件
                 var fa = pros.Where(x => x.PropertyType == typeof(FileAttachment) || typeof(TopBasePoco).IsAssignableFrom(x.PropertyType)).ToList();
                 foreach (var f in fa)
@@ -707,39 +762,15 @@ namespace WalkingTec.Mvvm.Core
                     }
                     f.SetValue(Entity, null);
                 }
-
-                DC.DeleteEntity(Entity);
-                DC.SaveChanges();
-                foreach (var item in fileids)
+                if (typeof(TModel) != typeof(FileAttachment))
                 {
-                    FileAttachmentVM ofa = new FileAttachmentVM();
-                    ofa.CopyContext(this);
-                    ofa.SetEntityById(item);
-                    ofa.DoDelete();
-                }
-            }
-            catch (Exception e)
-            {
-                MSD.AddModelError("", "数据使用中，无法删除");
-            }
-        }
-
-
-        public virtual async Task DoRealDeleteAsync()
-        {
-            try
-            {
-                List<Guid> fileids = new List<Guid>();
-                var pros = typeof(TModel).GetProperties();
-                //如果包含附件，则先删除附件
-                var fa = pros.Where(x => x.PropertyType == typeof(FileAttachment) || typeof(TopBasePoco).IsAssignableFrom(x.PropertyType)).ToList();
-                foreach (var f in fa)
-                {
-                    if (f.GetValue(Entity) is FileAttachment file)
+                    foreach (var pro in pros)
                     {
-                        fileids.Add(file.ID);
+                        if (pro.PropertyType.GetTypeInfo().IsSubclassOf(typeof(TopBasePoco)))
+                        {
+                            pro.SetValue(Entity, null);
+                        }
                     }
-                    f.SetValue(Entity, null);
                 }
                 DC.DeleteEntity(Entity);
                 await DC.SaveChangesAsync();
@@ -751,9 +782,9 @@ namespace WalkingTec.Mvvm.Core
                     await ofa.DoDeleteAsync();
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                MSD.AddModelError("", "数据使用中，无法删除");
+                MSD.AddModelError("", Program._localizer["DeleteFailed"]);
             }
         }
 
@@ -886,12 +917,12 @@ namespace WalkingTec.Mvvm.Core
                         //如果只有一个字段重复，则拼接形成 xxx字段重复 这种提示
                         if (props.Count == 1)
                         {
-                            MSD.AddModelError(GetValidationFieldName(props[0])[0], AllName + "字段重复");
+                            MSD.AddModelError(GetValidationFieldName(props[0])[0], Program._localizer["DuplicateError", AllName]);
                         }
                         //如果多个字段重复，则拼接形成 xx，yy，zz组合字段重复 这种提示
                         else if (props.Count > 1)
                         {
-                             MSD.AddModelError(GetValidationFieldName(props.First())[0], AllName + "字段组合重复");
+                             MSD.AddModelError(GetValidationFieldName(props.First())[0], Program._localizer["DuplicateGroupError", AllName]);
                         }
                     }
                 }

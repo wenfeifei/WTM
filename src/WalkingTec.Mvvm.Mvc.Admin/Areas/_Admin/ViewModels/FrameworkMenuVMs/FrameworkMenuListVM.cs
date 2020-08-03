@@ -42,14 +42,14 @@ namespace WalkingTec.Mvvm.Mvc.Admin.ViewModels.FrameworkMenuVMs
                     break;
                 default:
                     rv.AddRange(new GridColumn<FrameworkMenu_ListView>[] {
-                        this.MakeGridHeader(x => x.PageName, 300),
+                        this.MakeGridHeader(x => x.PageName,300),
                         this.MakeGridHeader(x => x.ModuleName, 150),
-                        this.MakeGridHeader(x => x.ShowOnMenu, 80),
-                        this.MakeGridHeader(x => x.FolderOnly, 80),
-                        this.MakeGridHeader(x => x.IsPublic, 80),
-                        this.MakeGridHeader(x => x.DisplayOrder, 80),
+                        this.MakeGridHeader(x => x.ShowOnMenu),
+                        this.MakeGridHeader(x => x.FolderOnly),
+                        this.MakeGridHeader(x => x.IsPublic),
+                        this.MakeGridHeader(x => x.DisplayOrder),
                         this.MakeGridHeader(x => x.ICon, 100).SetFormat(PhotoIdFormat),
-                        this.MakeGridHeaderAction(width: 290)
+                        this.MakeGridHeaderAction(width: 270)
                     });
                     break;
             }
@@ -70,7 +70,20 @@ namespace WalkingTec.Mvvm.Mvc.Admin.ViewModels.FrameworkMenuVMs
                     {
                         foreach (var c in others)
                         {
-                            rv += UIService.MakeCheckBox(c.Allowed, c.ActionName, "menu_" + c.ID, "1");
+                            string actionname = "";
+                            if(c.ActionName != null)
+                            {
+                                if (Localizer[c.ActionName].ResourceNotFound == true)
+                                {
+                                    actionname = Core.Program._localizer[c.ActionName];
+                                }
+                                else
+                                {
+                                    actionname = Localizer[c.ActionName];
+                                }
+
+                            }
+                            rv += UIService.MakeCheckBox(c.Allowed, actionname, "menu_" + c.ID, "1");
                         }
                     }
                 }
@@ -81,6 +94,7 @@ namespace WalkingTec.Mvvm.Mvc.Admin.ViewModels.FrameworkMenuVMs
             }
             return rv;
         }
+
 
         protected override List<GridAction> InitGridAction()
         {
@@ -125,6 +139,32 @@ namespace WalkingTec.Mvvm.Mvc.Admin.ViewModels.FrameworkMenuVMs
 
             var data = DC.Set<FrameworkMenu>().ToList();
             var topdata = data.Where(x => x.ParentId == null).ToList().FlatTree(x => x.DisplayOrder).Where(x => x.IsInside == false || x.FolderOnly == true || x.Url.EndsWith("/Index") || x.MethodName == null).ToList();
+            foreach (var item in topdata)
+            {
+                if (item.PageName?.StartsWith("MenuKey.") == true)
+                {
+                    if (Core.Program._Callerlocalizer[item.PageName].ResourceNotFound == true)
+                    {
+                        item.PageName = Core.Program._localizer[item.PageName];
+                    }
+                    else
+                    {
+                        item.PageName = Core.Program._Callerlocalizer[item.PageName];
+                    }
+                }
+                if (item.ModuleName?.StartsWith("MenuKey.") == true)
+                {
+                    if (Core.Program._Callerlocalizer[item.ModuleName].ResourceNotFound == true)
+                    {
+                        item.ModuleName = Core.Program._localizer[item.ModuleName];
+                    }
+                    else
+                    {
+                        item.ModuleName = Core.Program._Callerlocalizer[item.ModuleName];
+                    }
+                }
+
+            }
             topdata.ForEach((x) => { int l = x.GetLevel(); for (int i = 0; i < l; i++) { x.PageName = "&nbsp;&nbsp;&nbsp;&nbsp;" + x.PageName; } });
             if (SearcherMode == ListVMSearchModeEnum.Custom2)
             {
@@ -184,6 +224,7 @@ namespace WalkingTec.Mvvm.Mvc.Admin.ViewModels.FrameworkMenuVMs
 
             }
         }
+
     }
 
     /// <summary>

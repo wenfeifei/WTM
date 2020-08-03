@@ -109,6 +109,10 @@ namespace WalkingTec.Mvvm.Core
         public string BindVisiableColName { get; set; }
 
         /// <summary>
+        /// additional css class of button
+        /// </summary>
+        public string ButtonClass { get; set;}
+        /// <summary>
         /// if the dialog need to be maximax
         /// </summary>
         public bool Max { get; set; }
@@ -139,18 +143,21 @@ namespace WalkingTec.Mvvm.Core
         {
             get
             {
-                var rv = $"/{HttpUtility.UrlEncode(ControllerName)}/{HttpUtility.UrlEncode(ActionName)}";
-                if (!string.IsNullOrEmpty(Area))
-                {
-                    rv = $"/{HttpUtility.UrlEncode(Area)}{rv}";
-                }
-                if (!string.IsNullOrEmpty(QueryString))
-                {
-                    rv = $"{rv}?{QueryString}";
-                }
-                else
-                {
-                    rv = $"{rv}?1=1"; ;
+                var rv = "";
+                if(string.IsNullOrEmpty(ControllerName) == false){
+                    rv = $"/{HttpUtility.UrlEncode(ControllerName)}/{HttpUtility.UrlEncode(ActionName)}";
+                    if (!string.IsNullOrEmpty(Area))
+                    {
+                        rv = $"/{HttpUtility.UrlEncode(Area)}{rv}";
+                    }
+                    if (!string.IsNullOrEmpty(QueryString))
+                    {
+                        rv = $"{rv}?{QueryString}";
+                    }
+                    else
+                    {
+                        rv = $"{rv}?1=1"; ;
+                    }
                 }
                 return rv;
             }
@@ -162,6 +169,11 @@ namespace WalkingTec.Mvvm.Core
         /// 是否跳转到新页面
         /// </summary>
         public bool IsRedirect { get; set; }
+
+        /// <summary>
+        /// 弹出问询框
+        /// </summary>
+        public string PromptMessage { get; set; }
 
         /// <summary>
         /// 动作类型

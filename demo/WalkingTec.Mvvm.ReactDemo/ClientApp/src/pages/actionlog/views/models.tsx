@@ -1,5 +1,5 @@
 import { Input, Switch, Icon, Select, Upload, message, Modal,InputNumber } from 'antd';
-import { WtmCascader, WtmCheckbox, WtmDatePicker, WtmEditor, WtmRadio, WtmSelect, WtmTransfer, WtmUploadImg, WtmUpload } from 'components/form';
+import { WtmCascader, WtmCheckbox, WtmDatePicker, WtmEditor, WtmRadio, WtmSelect, WtmTransfer, WtmUploadImg, WtmUpload, WtmRangePicker} from 'components/form';
 import { FormItem } from 'components/dataView';
 import * as React from 'react';
 import lodash from 'lodash';
@@ -134,7 +134,7 @@ export default {
             "ActionTime":{
                 label: <FormattedMessage id='actionlog.ActionTime' />,
                 rules: [],
-                formItem: <WtmDatePicker placeholder="" />
+                formItem: <WtmRangePicker placeholder="" />
             },
             /** IP */
             "IP":{
@@ -146,7 +146,7 @@ export default {
             "LogType":{
                 label: <FormattedMessage id='actionlog.LogType' />,
                 rules: [],
-                formItem: <WtmSelect placeholder={getLocalesValue('tips.all')} dataSource={[  
+                formItem: <WtmSelect placeholder={getLocalesValue('tips.all')} mode="multiple" dataSource={[  
                     { Text: <FormattedMessage id='actionlog.LogType.0' />, Value: 0 },
                     { Text: <FormattedMessage id='actionlog.LogType.1' />, Value: 1 },
                     { Text: <FormattedMessage id='actionlog.LogType.2' />, Value: 2 }

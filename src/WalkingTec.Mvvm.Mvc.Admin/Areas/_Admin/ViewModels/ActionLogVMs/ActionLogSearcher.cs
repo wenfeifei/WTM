@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc;
 using WalkingTec.Mvvm.Core;
 
 namespace WalkingTec.Mvvm.Mvc.Admin.ViewModels.ActionLogVMs
@@ -17,13 +18,15 @@ namespace WalkingTec.Mvvm.Mvc.Admin.ViewModels.ActionLogVMs
         [Display(Name = "LogType")]
         public List<ActionLogTypesEnum> LogType { get; set; }
 
-        [Display(Name = "StartActionTime")]
-        public DateTime? StartActionTime { get; set; }
+        [Display(Name = "ActionTime")]
+        public DateRange ActionTime { get; set; }
 
-        [Display(Name = "EndActionTime")]
-        public DateTime? EndActionTime { get; set; }
 
         [Display(Name = "IP")]
         public string IP { get; set; }
+
+        [Display(Name = "Duration")]
+        public double? Duration { get; set; }
+
     }
 }

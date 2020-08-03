@@ -206,13 +206,13 @@ layui.use(['autocomplete'],function(){{
             }
 
             //如果是submitbutton，则在button前面加入一个区域用来定位输出后台返回的错误
-            if (output.TagName == "button" && output.Attributes.TryGetAttribute("lay-submit", out TagHelperAttribute ta) == true)
-            {
-                output.PreElement.SetHtmlContent($"<p id='{Id}errorholder'></p>" + output.PreElement.GetContent());
-            }
+            //if (output.TagName == "button" && output.Attributes.TryGetAttribute("lay-submit", out TagHelperAttribute ta) == true)
+            //{
+            //    output.PreElement.SetHtmlContent($"<p id='{Id}errorholder'></p>" + output.PreElement.GetContent());
+            //}
         }
 
-        public string FormatFuncName(string funcname)
+        public string FormatFuncName(string funcname,bool appendparameter = true)
         {
             if (funcname == null)
             {
@@ -224,7 +224,10 @@ layui.use(['autocomplete'],function(){{
             {
                 rv = rv.Substring(0, ind);
             }
-            rv += "(data)";
+            if (appendparameter == true)
+            {
+                rv += "(data)";
+            }
             return rv;
         }
     }

@@ -14,6 +14,8 @@ using Newtonsoft.Json.Linq;
 using System.Text.RegularExpressions;
 using System.Text;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Logging;
+using WalkingTec.Mvvm.Core.Support.Json;
 
 namespace WalkingTec.Mvvm.Mvc.Filters
 {
@@ -34,7 +36,7 @@ namespace WalkingTec.Mvvm.Mvc.Filters
                 context.HttpContext.Items.Add("actionstarttime", DateTime.Now);
             }
             var ctrlActDesc = context.ActionDescriptor as ControllerActionDescriptor;
-            var log = new ActionLog();// 初始化log备用
+            var log = new SimpleLog();// 初始化log备用
             var ctrlDes = ctrlActDesc.ControllerTypeInfo.GetCustomAttributes(typeof(ActionDescriptionAttribute), false).Cast<ActionDescriptionAttribute>().FirstOrDefault();
             var actDes = ctrlActDesc.MethodInfo.GetCustomAttributes(typeof(ActionDescriptionAttribute), false).Cast<ActionDescriptionAttribute>().FirstOrDefault();
             var postDes = ctrlActDesc.MethodInfo.GetCustomAttributes(typeof(HttpPostAttribute), false).Cast<HttpPostAttribute>().FirstOrDefault();
@@ -44,7 +46,7 @@ namespace WalkingTec.Mvvm.Mvc.Filters
             //给日志的多语言属性赋值
             log.ModuleName = ctrlDes?.GetDescription(ctrl) ?? ctrlActDesc.ControllerName;
             log.ActionName = actDes?.GetDescription(ctrl) ?? ctrlActDesc.ActionName + (postDes == null ? string.Empty : "[P]");
-            log.ActionUrl = context.HttpContext.GetRemoteIpAddress();
+            log.ActionUrl = ctrl.BaseUrl;
             log.IP = context.HttpContext.Connection.RemoteIpAddress.ToString();
 
             ctrl.Log = log;
@@ -65,7 +67,7 @@ namespace WalkingTec.Mvvm.Mvc.Filters
                     model.Log = ctrl.Log;
                     model.CurrentUrl = ctrl.BaseUrl;
                     model.ConfigInfo = (Configs)context.HttpContext.RequestServices.GetService(typeof(Configs));
-                    model.DataContextCI = ((GlobalData)context.HttpContext.RequestServices.GetService(typeof(GlobalData))).DataContextCI;
+                    model.DataContextCI = model.ConfigInfo.ConnectionStrings.Where(x => x.Key.ToLower() == ctrl.CurrentCS.ToLower()).Select(x => x.DcConstructor).FirstOrDefault();
                     model.Controller = ctrl;
                     model.ControllerName = ctrl.GetType().FullName;
                     model.Localizer = ctrl.Localizer;
@@ -109,7 +111,7 @@ namespace WalkingTec.Mvvm.Mvc.Filters
 
                     if (ctrl is BaseApiController apictrl)
                     {
-                        apictrl.TryValidateModel(model);
+                        //apictrl.TryValidateModel(model);
                         apictrl.HttpContext.Request.Body.Position = 0;
                         StreamReader tr = new StreamReader(apictrl.HttpContext.Request.Body);
                         string body = tr.ReadToEnd();
@@ -121,29 +123,32 @@ namespace WalkingTec.Mvvm.Mvc.Filters
                         }
 
                     }
-                    if (model is IBaseCRUDVM<TopBasePoco> crud)
-                    {
-                        var pros = crud.Entity.GetType().GetProperties();
-                        foreach (var pro in pros)
-                        {
-                            //找到类型为List<xxx>的字段
-                            if (pro.PropertyType.GenericTypeArguments.Count() > 0)
-                            {
-                                //获取xxx的类型
-                                var ftype = pro.PropertyType.GenericTypeArguments.First();
-                                //如果xxx继承自TopBasePoco
-                                if (ftype.IsSubclassOf(typeof(TopBasePoco)))
-                                {
-                                    //界面传过来的子表数据
+                    //if (model is IBaseCRUDVM<TopBasePoco> crud)
+                    //{
+                    //    var pros = crud.Entity.GetType().GetProperties();
+                    //    foreach (var pro in pros)
+                    //    {
+                    //        if (model.FC.ContainsKey("Entity." + pro.Name))
+                    //        {
+                    //            //找到类型为List<xxx>的字段
+                    //            if (pro.PropertyType.GenericTypeArguments.Count() > 0)
+                    //            {
+                    //                //获取xxx的类型
+                    //                var ftype = pro.PropertyType.GenericTypeArguments.First();
+                    //                //如果xxx继承自TopBasePoco
+                    //                if (ftype.IsSubclassOf(typeof(TopBasePoco)))
+                    //                {
+                    //                    //界面传过来的子表数据
 
-                                    if (pro.GetValue(crud.Entity) is IEnumerable<TopBasePoco> list && list.Count() == 0)
-                                    {
-                                        pro.SetValue(crud.Entity, null);
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    //                    if (pro.GetValue(crud.Entity) is IEnumerable<TopBasePoco> list && list.Count() == 0)
+                    //                    {
+                    //                        pro.SetValue(crud.Entity, null);
+                    //                    }
+                    //                }
+                    //            }
+                    //        }
+                    //    }
+                    //}
                     //如果ViewModel T继承自IBaseBatchVM<BaseVM>，则自动为其中的ListVM和EditModel初始化数据
                     if (model is IBaseBatchVM<BaseVM>)
                     {
@@ -183,13 +188,18 @@ namespace WalkingTec.Mvvm.Mvc.Filters
                         template.CopyContext(model);
                         template.DoReInit();
                     }
+                    if(model is IBasePagedListVM<TopBasePoco, ISearcher> lvm)
+                    {
+                        var searcher = lvm.Searcher;
+                        searcher.CopyContext(lvm);                        
+                    }
                     model.Validate();
                     var invalid = ctrl.ModelState.Where(x => x.Value.ValidationState == Microsoft.AspNetCore.Mvc.ModelBinding.ModelValidationState.Invalid).Select(x => x.Key).ToList();
                     if ((ctrl as ControllerBase).Request.Method.ToLower() == "put" || validpostonly != null)
                     {
                         foreach (var v in invalid)
                         {
-                            if (model.FC.ContainsKey(v) == false)
+                            if (v?.StartsWith("Entity.") == true && model.FC.ContainsKey(v) == false)
                             {
                                 ctrl.ModelState.Remove(v);
                             }
@@ -221,6 +231,16 @@ namespace WalkingTec.Mvvm.Mvc.Filters
                         ctrl.ModelState.Remove(r);
                     }
                 }
+
+                if(item.Value is BaseSearcher se)
+                {
+                    se.Session = new SessionServiceProvider(context.HttpContext.Session);
+                    se.LoginUserInfo = ctrl.LoginUserInfo;
+                    se.DC = ctrl.DC;
+                    se.FC = new Dictionary<string, object>();
+                    se.MSD = new ModelStateServiceProvider(ctrl.ModelState);
+                    se.Validate();
+                }
             }
 
             base.OnActionExecuting(context);
@@ -241,7 +261,7 @@ namespace WalkingTec.Mvvm.Mvc.Filters
             if (context.Result is PartialViewResult)
             {
                 var model = (context.Result as PartialViewResult).ViewData?.Model as BaseVM;
-                if (model == null && (context.Result as PartialViewResult).ViewData != null)
+                if (model == null && (context.Result as PartialViewResult).Model == null && (context.Result as PartialViewResult).ViewData != null)
                 {
                     model = ctrl.CreateVM<BaseVM>();
                     (context.Result as PartialViewResult).ViewData.Model = model;
@@ -271,8 +291,25 @@ namespace WalkingTec.Mvvm.Mvc.Filters
                             var pmenu = ctrl.GlobaInfo.AllMenus.Where(x => x.ID == menu.ParentId).FirstOrDefault();
                             if (pmenu != null)
                             {
+                                if (ctrl.Localizer[pmenu.PageName].ResourceNotFound == true)
+                                {
+                                    pmenu.PageName = Core.Program._localizer[pmenu.PageName];
+                                }
+                                else
+                                {
+                                    pmenu.PageName = ctrl.Localizer[pmenu.PageName];
+                                }
+
                                 pagetitle = pmenu.PageName + " - ";
                             }
+                        }
+                        if (ctrl.Localizer[menu.PageName].ResourceNotFound == true)
+                        {
+                            menu.PageName = Core.Program._localizer[menu.PageName];
+                        }
+                        else
+                        {
+                            menu.PageName = ctrl.Localizer[menu.PageName];
                         }
                         pagetitle += menu.PageName;
                     }
@@ -286,10 +323,14 @@ namespace WalkingTec.Mvvm.Mvc.Filters
             if (context.Result is ViewResult)
             {
                 var model = (context.Result as ViewResult).ViewData?.Model as BaseVM;
-                if (model == null && (context.Result as ViewResult).ViewData != null)
+                if (model == null && (context.Result as ViewResult).Model == null && (context.Result as ViewResult).ViewData != null)
                 {
                     model = ctrl.CreateVM<BaseVM>();
                     (context.Result as ViewResult).ViewData.Model = model;
+                }
+               if (model != null)
+                {
+                    context.HttpContext.Response.Cookies.Append("divid", model?.ViewDivId);
                 }
             }
             base.OnActionExecuted(context);
@@ -304,15 +345,15 @@ namespace WalkingTec.Mvvm.Mvc.Filters
                 return;
             }
             var ctrlActDesc = context.ActionDescriptor as ControllerActionDescriptor;
+            var nolog = ctrlActDesc.MethodInfo.IsDefined(typeof(NoLogAttribute), false) || ctrlActDesc.ControllerTypeInfo.IsDefined(typeof(NoLogAttribute), false);
+
             //如果是来自Error，则已经记录过日志，跳过
             if (ctrlActDesc.ControllerName == "_Framework" && ctrlActDesc.ActionName == "Error")
             {
                 return;
             }
-            if (ctrl.ConfigInfo.EnableLog == true)
+            if ( nolog == false)
             {
-                if (ctrl.ConfigInfo.LogExceptionOnly == false || context.Exception != null)
-                {
                     var log = new ActionLog();
                     var ctrlDes = ctrlActDesc.ControllerTypeInfo.GetCustomAttributes(typeof(ActionDescriptionAttribute), false).Cast<ActionDescriptionAttribute>().FirstOrDefault();
                     var actDes = ctrlActDesc.MethodInfo.GetCustomAttributes(typeof(ActionDescriptionAttribute), false).Cast<ActionDescriptionAttribute>().FirstOrDefault();
@@ -327,9 +368,9 @@ namespace WalkingTec.Mvvm.Mvc.Filters
                     log.ActionUrl = context.HttpContext.Request.Path;
                     log.IP = context.HttpContext.GetRemoteIpAddress();
                     log.Remark = context.Exception?.ToString() ?? string.Empty;
-                    if (string.IsNullOrEmpty(log.Remark) == false && log.Remark.Length > 1000)
+                    if (string.IsNullOrEmpty(log.Remark) == false && log.Remark.Length > 2000)
                     {
-                        log.Remark = log.Remark.Substring(0, 1000);
+                        log.Remark = log.Remark.Substring(0, 2000);
                     }
                     var starttime = context.HttpContext.Items["actionstarttime"] as DateTime?;
                     if (starttime != null)
@@ -338,14 +379,11 @@ namespace WalkingTec.Mvvm.Mvc.Filters
                     }
                     try
                     {
-                        using (var dc = ctrl.CreateDC(true))
-                        {
-                            dc.Set<ActionLog>().Add(log);
-                            dc.SaveChanges();
-                        }
+                        GlobalServices.GetRequiredService<ILogger<ActionLog>>().Log<ActionLog>(LogLevel.Information, new EventId(), log, null, (a,b)=> {
+                            return a.GetLogString();
+                        });
                     }
                     catch { }
-                }
             }
             if (context.Exception != null)
             {

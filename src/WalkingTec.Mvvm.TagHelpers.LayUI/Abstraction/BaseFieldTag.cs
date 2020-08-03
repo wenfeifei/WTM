@@ -73,24 +73,23 @@ namespace WalkingTec.Mvvm.TagHelpers.LayUI
             {
                 output.Attributes.SetAttribute("name", string.IsNullOrEmpty(Name) ? Field?.Name : Name);
             }
-            if (Disabled)
+            if (Disabled && (Field?.Model != null || (this is ComboBoxTagHelper)==false))
             {
                 output.Attributes.SetAttribute("readonly", string.Empty);
                 output.Attributes.TryGetAttribute("class", out TagHelperAttribute oldclass);
                 output.Attributes.SetAttribute("class", "layui-disabled " + (oldclass?.Value ?? string.Empty));
             }
 
-            if (!(this is DisplayTagHelper) && !(this is CheckBoxTagHelper) && Field.Metadata.IsRequired)
+            if (!(this is DisplayTagHelper) && Field.Metadata.IsRequired)
             {
                 requiredDot = "<font color='red'>*</font>";
-                if (!(this is UploadTagHelper || this is RadioTagHelper || this is CheckBoxTagHelper)) // 上传组件自定义验证
+                if (!(this is UploadTagHelper || this is RadioTagHelper || this is CheckBoxTagHelper || this is MultiUploadTagHelper)) // 上传组件自定义验证
                 {
                     //richtextbox不需要进行必填验证
                     if (output.Attributes["isrich"] == null)
                     {
-                        var pro = Field?.Metadata.ContainerType.GetProperties().Where(x => x.Name == Field?.Metadata.PropertyName).FirstOrDefault();
                         output.Attributes.Add("lay-verify", "required");
-                        output.Attributes.Add("lay-reqText", $"{Program._localizer["{0}required", pro.GetPropertyDisplayName()]}");
+                        output.Attributes.Add("lay-reqText", $"{Program._localizer["{0}required", Field?.Metadata?.DisplayName ?? Field?.Metadata?.Name]}");
                     }
                 }
             }
@@ -128,7 +127,7 @@ namespace WalkingTec.Mvvm.TagHelpers.LayUI
                 preHtml += $@"
 <div {(this is DisplayTagHelper ? "style=\"margin-bottom:0px;\"" : "")} class=""layui-form-item"">
     <label for=""{Id}"" class=""layui-form-label"" {(LabelWidth == null ? string.Empty : "style='width:" + LabelWidth + "px'")}>{lb}</label>
-    <div class=""{ (string.IsNullOrEmpty(PaddingText) ? "layui-input-block" : "layui-input-inline")}"" {(LabelWidth == null ? "" : "style='margin-left:" + (LabelWidth + 30) + "px'")}>
+    <div class=""{ (string.IsNullOrEmpty(PaddingText) ? "layui-input-block" : "layui-input-inline")}"" {(LabelWidth == null || string.IsNullOrEmpty(PaddingText)==false ? "" : "style='margin-left:" + (LabelWidth + 30) + "px'")}>
 ";
             }
             else

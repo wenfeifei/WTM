@@ -12,21 +12,7 @@ $othernamespace$
 namespace $vmnamespace$
 {
     public partial class $classname$ListVM : BasePagedListVM<$classname$_View, $classname$Searcher>
-    {
-        protected override List<GridAction> InitGridAction()
-        {
-            return new List<GridAction>
-            {
-                this.MakeStandardAction("$modelname$", GridActionStandardTypesEnum.Create, "新建","$area$", dialogWidth: 800),
-                this.MakeStandardAction("$modelname$", GridActionStandardTypesEnum.Edit, "修改","$area$", dialogWidth: 800),
-                this.MakeStandardAction("$modelname$", GridActionStandardTypesEnum.Delete, "删除", "$area$",dialogWidth: 800),
-                this.MakeStandardAction("$modelname$", GridActionStandardTypesEnum.Details, "详细","$area$", dialogWidth: 800),
-                this.MakeStandardAction("$modelname$", GridActionStandardTypesEnum.BatchEdit, "批量修改","$area$", dialogWidth: 800),
-                this.MakeStandardAction("$modelname$", GridActionStandardTypesEnum.BatchDelete, "批量删除","$area$", dialogWidth: 800),
-                this.MakeStandardAction("$modelname$", GridActionStandardTypesEnum.Import, "导入","$area$", dialogWidth: 800),
-                this.MakeStandardAction("$modelname$", GridActionStandardTypesEnum.ExportExcel, "导出","$area$"),
-            };
-        }
+    {$actions$
 
         protected override IEnumerable<IGridColumn<$classname$_View>> InitGridHeader()
         {

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -36,6 +37,7 @@ namespace WalkingTec.Mvvm.Mvc
         [Display(Name = "GenApi")]
         public bool IsApi { get; set; }
 
+        [Display(Name = "AuthMode")]
         public ApiAuthMode AuthMode { get; set; }
 
         public string ModelName
@@ -72,9 +74,9 @@ namespace WalkingTec.Mvvm.Mvc
                 if (_mainDir == null)
                 {
                     int? index = EntryDir?.IndexOf($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}Debug{Path.DirectorySeparatorChar}");
-                    if(index == null || index < 0)
+                    if (index == null || index < 0)
                     {
-                        index = EntryDir?.IndexOf($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}Release{Path.DirectorySeparatorChar}")??0;
+                        index = EntryDir?.IndexOf($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}Release{Path.DirectorySeparatorChar}") ?? 0;
                     }
 
                     _mainDir = EntryDir?.Substring(0, index.Value);
@@ -329,6 +331,21 @@ namespace WalkingTec.Mvvm.Mvc
 
         protected override void InitVM()
         {
+            if (string.IsNullOrEmpty(SelectedModel) == false)
+            {
+                foreach (var item in ConfigInfo.ConnectionStrings)
+                {
+                    var dc = item.CreateDC();
+                    Type t = typeof(DbSet<>).MakeGenericType(Type.GetType(SelectedModel));
+                    var exist = dc.GetType().GetProperties().Where(x => x.PropertyType == t).FirstOrDefault();
+                    if (exist != null)
+                    {
+                        this.DC = dc;
+                    }
+                }
+
+            }
+
             FieldList = new CodeGenListVM();
             FieldList.CopyContext(this);
         }
@@ -355,7 +372,7 @@ namespace WalkingTec.Mvvm.Mvc
                     File.WriteAllText($"{ViewDir}{Path.DirectorySeparatorChar}BatchEdit.cshtml", GenerateView("BatchEditView"), Encoding.UTF8);
                     File.WriteAllText($"{ViewDir}{Path.DirectorySeparatorChar}BatchDelete.cshtml", GenerateView("BatchDeleteView"), Encoding.UTF8);
                 }
-                if (UI == UIEnum.React)
+                if (UI == UIEnum.React || UI == UIEnum.VUE)
                 {
                     if (Directory.Exists($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}pages{Path.DirectorySeparatorChar}{ModelName.ToLower()}") == false)
                     {
@@ -369,45 +386,92 @@ namespace WalkingTec.Mvvm.Mvc
                     {
                         Directory.CreateDirectory($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}pages{Path.DirectorySeparatorChar}{ModelName.ToLower()}{Path.DirectorySeparatorChar}store");
                     }
-                    File.WriteAllText($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}pages{Path.DirectorySeparatorChar}{ModelName.ToLower()}{Path.DirectorySeparatorChar}views{Path.DirectorySeparatorChar}action.tsx", GenerateReactView("action"), Encoding.UTF8);
-                    File.WriteAllText($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}pages{Path.DirectorySeparatorChar}{ModelName.ToLower()}{Path.DirectorySeparatorChar}views{Path.DirectorySeparatorChar}forms.tsx", GenerateReactView("forms"), Encoding.UTF8);
-                    File.WriteAllText($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}pages{Path.DirectorySeparatorChar}{ModelName.ToLower()}{Path.DirectorySeparatorChar}views{Path.DirectorySeparatorChar}models.tsx", GenerateReactView("models"), Encoding.UTF8);
-                    File.WriteAllText($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}pages{Path.DirectorySeparatorChar}{ModelName.ToLower()}{Path.DirectorySeparatorChar}views{Path.DirectorySeparatorChar}other.tsx", GenerateReactView("other"), Encoding.UTF8);
-                    File.WriteAllText($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}pages{Path.DirectorySeparatorChar}{ModelName.ToLower()}{Path.DirectorySeparatorChar}views{Path.DirectorySeparatorChar}search.tsx", GenerateReactView("search"), Encoding.UTF8);
-                    File.WriteAllText($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}pages{Path.DirectorySeparatorChar}{ModelName.ToLower()}{Path.DirectorySeparatorChar}views{Path.DirectorySeparatorChar}table.tsx", GenerateReactView("table"), Encoding.UTF8);
-                    File.WriteAllText($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}pages{Path.DirectorySeparatorChar}{ModelName.ToLower()}{Path.DirectorySeparatorChar}store{Path.DirectorySeparatorChar}index.ts", GetResource("index.txt", "Spa.React.store").Replace("$modelname$", ModelName.ToLower()), Encoding.UTF8);
-                    File.WriteAllText($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}pages{Path.DirectorySeparatorChar}{ModelName.ToLower()}{Path.DirectorySeparatorChar}index.tsx", GetResource("index.txt", "Spa.React").Replace("$modelname$", ModelName.ToLower()), Encoding.UTF8);
-                    File.WriteAllText($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}pages{Path.DirectorySeparatorChar}{ModelName.ToLower()}{Path.DirectorySeparatorChar}style.less", GetResource("style.txt", "Spa.React").Replace("$modelname$", ModelName.ToLower()), Encoding.UTF8);
-
+                    if (UI == UIEnum.React)
+                    {
+                        File.WriteAllText($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}pages{Path.DirectorySeparatorChar}{ModelName.ToLower()}{Path.DirectorySeparatorChar}views{Path.DirectorySeparatorChar}action.tsx", GenerateReactView("action"), Encoding.UTF8);
+                        File.WriteAllText($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}pages{Path.DirectorySeparatorChar}{ModelName.ToLower()}{Path.DirectorySeparatorChar}views{Path.DirectorySeparatorChar}forms.tsx", GenerateReactView("forms"), Encoding.UTF8);
+                        File.WriteAllText($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}pages{Path.DirectorySeparatorChar}{ModelName.ToLower()}{Path.DirectorySeparatorChar}views{Path.DirectorySeparatorChar}models.tsx", GenerateReactView("models"), Encoding.UTF8);
+                        File.WriteAllText($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}pages{Path.DirectorySeparatorChar}{ModelName.ToLower()}{Path.DirectorySeparatorChar}views{Path.DirectorySeparatorChar}other.tsx", GenerateReactView("other"), Encoding.UTF8);
+                        File.WriteAllText($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}pages{Path.DirectorySeparatorChar}{ModelName.ToLower()}{Path.DirectorySeparatorChar}views{Path.DirectorySeparatorChar}search.tsx", GenerateReactView("search"), Encoding.UTF8);
+                        File.WriteAllText($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}pages{Path.DirectorySeparatorChar}{ModelName.ToLower()}{Path.DirectorySeparatorChar}views{Path.DirectorySeparatorChar}table.tsx", GenerateReactView("table"), Encoding.UTF8);
+                        File.WriteAllText($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}pages{Path.DirectorySeparatorChar}{ModelName.ToLower()}{Path.DirectorySeparatorChar}store{Path.DirectorySeparatorChar}index.ts", GetResource("index.txt", "Spa.React.store").Replace("$modelname$", ModelName.ToLower()), Encoding.UTF8);
+                        File.WriteAllText($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}pages{Path.DirectorySeparatorChar}{ModelName.ToLower()}{Path.DirectorySeparatorChar}index.tsx", GetResource("index.txt", "Spa.React").Replace("$modelname$", ModelName.ToLower()), Encoding.UTF8);
+                        File.WriteAllText($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}pages{Path.DirectorySeparatorChar}{ModelName.ToLower()}{Path.DirectorySeparatorChar}style.less", GetResource("style.txt", "Spa.React").Replace("$modelname$", ModelName.ToLower()), Encoding.UTF8);
+                    }
+                    if (UI == UIEnum.VUE)
+                    {
+                        List<string> apipneeded = new List<string>();
+                        File.WriteAllText($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}pages{Path.DirectorySeparatorChar}{ModelName.ToLower()}{Path.DirectorySeparatorChar}index.vue", GenerateVUEView("index", apipneeded), Encoding.UTF8);
+                        File.WriteAllText($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}pages{Path.DirectorySeparatorChar}{ModelName.ToLower()}{Path.DirectorySeparatorChar}config.ts", GenerateVUEView("config", apipneeded), Encoding.UTF8);
+                        File.WriteAllText($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}pages{Path.DirectorySeparatorChar}{ModelName.ToLower()}{Path.DirectorySeparatorChar}views{Path.DirectorySeparatorChar}dialog-form.vue", GenerateVUEView("views.dialog-form", apipneeded), Encoding.UTF8);
+                        File.WriteAllText($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}pages{Path.DirectorySeparatorChar}{ModelName.ToLower()}{Path.DirectorySeparatorChar}store{Path.DirectorySeparatorChar}index.ts", GetResource("index.txt", "Spa.Vue.store").Replace("$modelname$", ModelName.ToLower()), Encoding.UTF8);
+                        File.WriteAllText($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}pages{Path.DirectorySeparatorChar}{ModelName.ToLower()}{Path.DirectorySeparatorChar}store{Path.DirectorySeparatorChar}api.ts", GenerateVUEView("store.api", apipneeded), Encoding.UTF8);
+                    }
                     var index = File.ReadAllText($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}pages{Path.DirectorySeparatorChar}index.ts");
                     if (index.Contains($"path: '/{ModelName.ToLower()}'") == false)
                     {
-                        index = index.Replace("/**WTM**/", $@"
+                        if (UI == UIEnum.React)
+                        {
+                            index = index.Replace("/**WTM**/", $@"
 , {ModelName.ToLower()}: {{
         name: '{ModuleName.ToLower()}',
         path: '/{ModelName.ToLower()}',
-        controller: '{ModelName}',
+        controller: '{ControllerNs},{ModelName}',
         component: React.lazy(() => import('./{ModelName.ToLower()}'))
     }}
 /**WTM**/
  ");
+                        }
+                        if (UI == UIEnum.VUE)
+                        {
+                            index = index.Replace("/**WTM**/", $@"
+, {ModelName.ToLower()}: {{
+    name: '{ModuleName.ToLower()}',
+    path: '/{ModelName.ToLower()}',
+    controller: '{ControllerNs},{ModelName}'
+    }}
+/**WTM**/
+ ");
+
+                        }
                         File.WriteAllText($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}pages{Path.DirectorySeparatorChar}index.ts", index, Encoding.UTF8);
                     }
-
-                    var menu = File.ReadAllText($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}subMenu.json");
-                    if (menu.Contains($@"""Path"": ""/{ModelName.ToLower()}""") == false)
+                    string menu = "";
+                    if (UI == UIEnum.React)
                     {
-                        var i = menu.LastIndexOf("}");
-                        menu = menu.Insert(i + 1, $@"
+                        menu = File.ReadAllText($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}public{Path.DirectorySeparatorChar}subMenu.json");
+                        if (menu.Contains($@"""Url"": ""/{ModelName.ToLower()}""") == false)
+                        {
+                            var i = menu.LastIndexOf("}");
+                            menu = menu.Insert(i + 1, $@"
 ,{{
-        ""Id"": ""{Guid.NewGuid().ToString()}"",
-        ""ParentId"": null,
-        ""Text"": ""{ModuleName.ToLower()}"",
-        ""Url"": ""/{ModelName.ToLower()}""
+    ""Id"": ""{Guid.NewGuid().ToString()}"",
+    ""ParentId"": null,
+    ""Text"": ""{ModuleName.ToLower()}"",
+    ""Url"": ""/{ModelName.ToLower()}""
     }}
 ");
-                        File.WriteAllText($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}subMenu.json", menu, Encoding.UTF8);
+                            File.WriteAllText($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}public{Path.DirectorySeparatorChar}subMenu.json", menu, Encoding.UTF8);
 
+                        }
+                    }
+                    if (UI == UIEnum.VUE)
+                    {
+                        menu = File.ReadAllText($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}subMenu.json");
+                        if (menu.Contains($@"""Url"": ""/{ModelName.ToLower()}""") == false)
+                        {
+                            var i = menu.LastIndexOf("}");
+                            menu = menu.Insert(i + 1, $@"
+,{{
+    ""Id"": ""{Guid.NewGuid().ToString()}"",
+    ""ParentId"": null,
+    ""Text"": ""{ModuleName.ToLower()}"",
+    ""Url"": ""/{ModelName.ToLower()}""
+    }}
+");
+                            File.WriteAllText($"{MainDir}{Path.DirectorySeparatorChar}ClientApp{Path.DirectorySeparatorChar}src{Path.DirectorySeparatorChar}subMenu.json", menu, Encoding.UTF8);
+
+                        }
                     }
                 }
             }
@@ -433,7 +497,7 @@ namespace WalkingTec.Mvvm.Mvc
             {
                 dir = "Mvc";
             }
-            if (UI == UIEnum.React || IsApi == true)
+            else
             {
                 dir = "Spa";
                 switch (AuthMode)
@@ -451,7 +515,7 @@ namespace WalkingTec.Mvvm.Mvc
                         break;
                 }
             }
-            var rv = GetResource("Controller.txt", dir).Replace("$jwt$",jwt).Replace("$vmnamespace$", VMNs).Replace("$namespace$", ControllerNs).Replace("$des$", ModuleName).Replace("$modelname$", ModelName).Replace("$modelnamespace$", ModelNS).Replace("$controllername$", $"{ModelName}{(IsApi == true ? "Api" : "")}");
+            var rv = GetResource("Controller.txt", dir).Replace("$jwt$", jwt).Replace("$vmnamespace$", VMNs).Replace("$namespace$", ControllerNs).Replace("$des$", ModuleName).Replace("$modelname$", ModelName).Replace("$modelnamespace$", ModelNS).Replace("$controllername$", $"{ModelName}{(IsApi == true ? "Api" : "")}");
             if (string.IsNullOrEmpty(Area))
             {
                 rv = rv.Replace("$area$", "");
@@ -462,20 +526,21 @@ namespace WalkingTec.Mvvm.Mvc
             }
             //生成api中获取下拉菜单数据的api
             //如果一个一对多关联其他类的字段是搜索条件或者表单字段，则生成对应的获取关联表数据的api
-            if (UI == UIEnum.React || IsApi == true)
+            if (UI != UIEnum.LayUI || IsApi == true)
             {
                 StringBuilder other = new StringBuilder();
                 List<FieldInfo> pros = FieldInfos.Where(x => x.IsSearcherField == true || x.IsFormField == true).ToList();
-                List<PropertyInfo> existSubPro = new List<PropertyInfo>();
+                List<string> existSubPro = new List<string>();
                 for (int i = 0; i < pros.Count; i++)
                 {
                     var item = pros[i];
-                    if ((item.InfoType == FieldInfoType.One2Many || item.InfoType == FieldInfoType.Many2Many)  && item.SubField != "`file")
+                    if ((item.InfoType == FieldInfoType.One2Many || item.InfoType == FieldInfoType.Many2Many) && item.SubField != "`file")
                     {
                         var subtype = Type.GetType(item.RelatedField);
                         var subpro = subtype.GetProperties().Where(x => x.Name == item.SubField).FirstOrDefault();
-                        existSubPro.Add(subpro);
-                        int count = existSubPro.Where(x => x.Name == subpro.Name).Count();
+                        var key = subtype.FullName + ":" + subpro.Name;
+                        existSubPro.Add(key);
+                        int count = existSubPro.Where(x => x == key).Count();
                         if (count == 1)
                         {
 
@@ -520,11 +585,14 @@ namespace WalkingTec.Mvvm.Mvc
                         {
                             continue;
                         }
-                        var fname = "All" + pro.FieldName + "s";
-                        prostring += $@"
+                        if (UI == UIEnum.LayUI && IsApi == false)
+                        {
+                            var fname = "All" + pro.FieldName + "s";
+                            prostring += $@"
         public List<ComboSelectListItem> {fname} {{ get; set; }}";
-                        initstr += $@"
+                            initstr += $@"
             {fname} = DC.Set<{subtype.Name}>().GetSelectListItems(LoginUserInfo?.DataPrivileges, null, y => y.{pro.SubField});";
+                        }
                     }
 
                     //生成普通字段定义
@@ -552,7 +620,7 @@ namespace WalkingTec.Mvvm.Mvc
                             break;
                         case FieldInfoType.One2Many:
                             typename = pro.GetFKType(DC, modelType);
-                            if(typename != "string")
+                            if (typename != "string")
                             {
                                 typename += "?";
                             }
@@ -564,7 +632,10 @@ namespace WalkingTec.Mvvm.Mvc
                         default:
                             break;
                     }
-
+                    if (typename == "DateTime" || typename == "DateTime?")
+                    {
+                        typename = "DateRange";
+                    }
                     prostring += $@"
         public {typename} {proname} {{ get; set; }}";
                 }
@@ -578,6 +649,28 @@ namespace WalkingTec.Mvvm.Mvc
                 string wherestring = "";
                 string subprostring = "";
                 string formatstring = "";
+                string actionstring = "";
+
+                if (UI == UIEnum.LayUI && IsApi == false)
+                {
+                    actionstring = $@"
+        protected override List<GridAction> InitGridAction()
+        {{
+            return new List<GridAction>
+            {{
+                this.MakeStandardAction(""{ModelName}"", GridActionStandardTypesEnum.Create, Localizer[""Create""],""{Area ?? ""}"", dialogWidth: 800),
+                this.MakeStandardAction(""{ModelName}"", GridActionStandardTypesEnum.Edit, Localizer[""Edit""], ""{Area ?? ""}"", dialogWidth: 800),
+                this.MakeStandardAction(""{ModelName}"", GridActionStandardTypesEnum.Delete, Localizer[""Delete""], ""{Area ?? ""}"", dialogWidth: 800),
+                this.MakeStandardAction(""{ModelName}"", GridActionStandardTypesEnum.Details, Localizer[""Details""], ""{Area ?? ""}"", dialogWidth: 800),
+                this.MakeStandardAction(""{ModelName}"", GridActionStandardTypesEnum.BatchEdit, Localizer[""BatchEdit""], ""{Area ?? ""}"", dialogWidth: 800),
+                this.MakeStandardAction(""{ModelName}"", GridActionStandardTypesEnum.BatchDelete, Localizer[""BatchDelete""], ""{Area ?? ""}"", dialogWidth: 800),
+                this.MakeStandardAction(""{ModelName}"", GridActionStandardTypesEnum.Import, Localizer[""Import""], ""{Area ?? ""}"", dialogWidth: 800),
+                this.MakeStandardAction(""{ModelName}"", GridActionStandardTypesEnum.ExportExcel, Localizer[""Export""], ""{Area ?? ""}""),
+            }};
+        }}
+";
+                }
+
                 var pros = FieldInfos.Where(x => x.IsListField == true).ToList();
                 Type modelType = Type.GetType(SelectedModel);
                 List<PropertyInfo> existSubPro = new List<PropertyInfo>();
@@ -664,6 +757,11 @@ namespace WalkingTec.Mvvm.Mvc
                                 wherestring += $@"
                 .CheckContain(Searcher.{pro.FieldName}, x=>x.{pro.FieldName})";
                             }
+                            else if (proType == typeof(DateTime) || proType == typeof(DateTime?))
+                            {
+                                wherestring += $@"
+                .CheckBetween(Searcher.{pro.FieldName}?.GetStartTime(), Searcher.{pro.FieldName}?.GetEndTime(), x => x.{pro.FieldName}, includeMax: false)";
+                            }
                             else
                             {
                                 wherestring += $@"
@@ -685,7 +783,7 @@ namespace WalkingTec.Mvvm.Mvc
                             break;
                     }
                 }
-                rv = rv.Replace("$headers$", headerstring).Replace("$where$", wherestring).Replace("$select$", selectstring).Replace("$subpros$", subprostring).Replace("$format$", formatstring);
+                rv = rv.Replace("$headers$", headerstring).Replace("$where$", wherestring).Replace("$select$", selectstring).Replace("$subpros$", subprostring).Replace("$format$", formatstring).Replace("$actions$", actionstring);
                 rv = GetRelatedNamespace(pros, rv);
             }
             if (name == "CrudVM")
@@ -717,7 +815,7 @@ namespace WalkingTec.Mvvm.Mvc
                         var protype = modelType.GetProperties().Where(x => x.Name == pro.FieldName).FirstOrDefault();
                         prostr += $@"
         [Display(Name = ""{protype.GetPropertyDisplayName()}"")]
-        public List<{pro.GetFKType(DC,modelType)}> Selected{pro.FieldName}IDs {{ get; set; }}";
+        public List<{pro.GetFKType(DC, modelType)}> Selected{pro.FieldName}IDs {{ get; set; }}";
                         initstr += $@"
             Selected{pro.FieldName}IDs = Entity.{pro.FieldName}?.Select(x => x.{pro.SubIdField}).ToList();";
                         addstr += $@"
@@ -743,7 +841,7 @@ namespace WalkingTec.Mvvm.Mvc
                 {
                     rv = rv.Replace("$pros$", prostr).Replace("$init$", initstr).Replace("$include$", includestr).Replace("$add$", addstr).Replace("$edit$", editstr);
                 }
-                if (UI == UIEnum.React || IsApi == true)
+                else
                 {
                     rv = rv.Replace("$pros$", "").Replace("$init$", "").Replace("$include$", includestr).Replace("$add$", "").Replace("$edit$", "");
                 }
@@ -757,7 +855,7 @@ namespace WalkingTec.Mvvm.Mvc
                 List<FieldInfo> pros = FieldInfos.Where(x => x.IsImportField == true).ToList();
                 foreach (var pro in pros)
                 {
-                    if(pro.InfoType == FieldInfoType.Many2Many)
+                    if (pro.InfoType == FieldInfoType.Many2Many)
                     {
                         continue;
                     }
@@ -887,7 +985,12 @@ namespace WalkingTec.Mvvm.Mvc
                             {
                                 checktype = proType.GetGenericArguments()[0];
                             }
-                            if (checktype == typeof(bool) || checktype.IsEnum())
+                            if(checktype == typeof(bool) && proType.IsNullable() == false)
+                            {
+                                fieldstr.Append($@"<wt:switch field=""{pre}.{item.FieldName}"" />");
+
+                            }
+                            else if (checktype == typeof(bool) || checktype.IsEnum())
                             {
                                 fieldstr.Append($@"<wt:combobox field=""{pre}.{item.FieldName}"" />");
                             }
@@ -932,7 +1035,7 @@ namespace WalkingTec.Mvvm.Mvc
                         {
                             fk = $@"Selected{item.FieldName}IDs";
                         }
-                        fieldstr.Append($@"<wt:combobox field=""Searcher.{fk}"" items=""Searcher.{fname}"" empty-text=""全部"" />");
+                        fieldstr.Append($@"<wt:combobox field=""Searcher.{fk}"" items=""Searcher.{fname}"" empty-text=""@Localizer[""All""]"" />");
                     }
                     else
                     {
@@ -942,17 +1045,17 @@ namespace WalkingTec.Mvvm.Mvc
                         {
                             checktype = proType.GetGenericArguments()[0];
                         }
-                        if (checktype.IsPrimitive || checktype == typeof(string) || checktype == typeof(decimal))
+                        if ((checktype.IsPrimitive && checktype != typeof(bool)) || checktype == typeof(string) || checktype == typeof(decimal))
                         {
                             fieldstr.Append($@"<wt:textbox field=""Searcher.{item.FieldName}"" />");
                         }
                         if (checktype == typeof(DateTime))
                         {
-                            fieldstr.Append($@"<wt:datetime field=""Searcher.{item.FieldName}"" />");
+                            fieldstr.Append($@"<wt:datetime field=""Searcher.{item.FieldName}"" range=""true"" />");
                         }
                         if (checktype.IsEnum() || checktype.IsBool())
                         {
-                            fieldstr.Append($@"<wt:combobox field=""Searcher.{item.FieldName}"" empty-text=""全部"" />");
+                            fieldstr.Append($@"<wt:combobox field=""Searcher.{item.FieldName}"" empty-text=""@Localizer[""All""]"" />");
                         }
                     }
                     fieldstr.Append(Environment.NewLine);
@@ -1051,7 +1154,7 @@ namespace WalkingTec.Mvvm.Mvc
                 var modelpros2 = modelType.GetRandomValues();
                 foreach (var pro in modelpros2)
                 {
-                    if(pro.Key.ToLower() == "id")
+                    if (pro.Key.ToLower() == "id")
                     {
                         continue;
                     }
@@ -1177,12 +1280,12 @@ namespace WalkingTec.Mvvm.Mvc
                         {
                             var subpro = subtype.GetProperties().Where(x => x.Name == item.SubField).FirstOrDefault();
                             existSubPro.Add(subpro);
-                            newname = item.SubField + "_view" + prefix;
                             int count = existSubPro.Where(x => x.Name == subpro.Name).Count();
                             if (count > 1)
                             {
                                 prefix = count + "";
                             }
+                            newname = item.SubField + "_view" + prefix;
                         }
                     }
                     fieldstr.Append($@"
@@ -1227,7 +1330,7 @@ namespace WalkingTec.Mvvm.Mvc
                     string rules = "rules: []";
                     if (isrequired == true)
                     {
-                        rules = $@"rules: [{{ ""required"": true, ""message"": ""{label}不能为空"" }}]";
+                        rules = $@"rules: [{{ ""required"": true, ""message"": <FormattedMessage id='tips.error.required' values={{{{ txt: getLocalesValue('{label}') }}}} /> }}]";
                     }
                     fieldstr.AppendLine($@"            /** {label} */");
                     if (string.IsNullOrEmpty(item.RelatedField) == false && string.IsNullOrEmpty(item.SubIdField) == true)
@@ -1259,6 +1362,7 @@ namespace WalkingTec.Mvvm.Mvc
                             else
                             {
                                 fieldstr.AppendLine($@"                formItem: <WtmTransfer
+                    listStyle={{undefined}}
                     dataSource={{Request.cache({{ url: ""/api/{ModelName}/Get{subtype.Name}s"" }})}}
                     mapKey=""{item.SubIdField}""
                 /> ");
@@ -1296,15 +1400,15 @@ namespace WalkingTec.Mvvm.Mvc
                         }
                         else if (checktype.IsNumber())
                         {
-                            fieldstr.AppendLine($@"                formItem: <InputNumber placeholder=""请输入 {label}"" />");
+                            fieldstr.AppendLine($@"                formItem: <InputNumber placeholder={{getLocalesTemplate('tips.placeholder.input', {{ txt: getLocalesValue('{label}') }})}} />");
                         }
                         else if (checktype == typeof(string))
                         {
-                            fieldstr.AppendLine($@"                formItem: <Input placeholder=""请输入 {label}"" />");
+                            fieldstr.AppendLine($@"                formItem: <Input placeholder={{getLocalesTemplate('tips.placeholder.input', {{ txt: getLocalesValue('{label}') }})}} />");
                         }
                         else if (checktype == typeof(DateTime))
                         {
-                            fieldstr.AppendLine($@"                formItem: <WtmDatePicker placeholder=""请输入 {label}"" />");
+                            fieldstr.AppendLine($@"                formItem: <WtmDatePicker placeholder={{getLocalesTemplate('tips.placeholder.input', {{ txt: getLocalesValue('{label}') }})}} />");
                         }
                     }
                     fieldstr.Append("            }");
@@ -1351,13 +1455,13 @@ namespace WalkingTec.Mvvm.Mvc
                         var subtype = Type.GetType(item.RelatedField);
                         if (string.IsNullOrEmpty(item.SubIdField) == true)
                         {
-                            fieldstr2.AppendLine($@"                formItem: <WtmSelect placeholder=""全部""
+                            fieldstr2.AppendLine($@"                formItem: <WtmSelect placeholder={{getLocalesValue('tips.all')}}
                     dataSource ={{ Request.cache({{ url: ""/api/{ModelName}/Get{subtype.Name}s"" }})}}
                 /> ");
                         }
                         else
                         {
-                            fieldstr2.AppendLine($@"                formItem: <WtmSelect placeholder=""全部""  multiple
+                            fieldstr2.AppendLine($@"                formItem: <WtmSelect placeholder={{getLocalesValue('tips.all')}}  multiple
                     dataSource ={{ Request.cache({{ url: ""/api/{ModelName}/Get{subtype.Name}s"" }})}}
                 /> ");
 
@@ -1373,14 +1477,14 @@ namespace WalkingTec.Mvvm.Mvc
                         }
                         if (checktype == typeof(bool))
                         {
-                            fieldstr2.AppendLine($@"                formItem: <WtmSelect placeholder=""全部""  dataSource={{[
-                    {{ Text: ""是"", Value: true }},{{ Text: ""否"", Value: false }}
+                            fieldstr2.AppendLine($@"                formItem: <WtmSelect placeholder={{getLocalesValue('tips.all')}}  dataSource={{[
+                    {{ Text: <FormattedMessage id='tips.bool.true' />, Value: true }},{{ Text: <FormattedMessage id='tips.bool.false' />, Value: false }}
                 ]}}/>");
                         }
                         else if (checktype.IsEnum())
                         {
                             var es = checktype.ToListItems();
-                            fieldstr2.AppendLine($@"                formItem: <WtmSelect placeholder=""全部"" dataSource={{[  ");
+                            fieldstr2.AppendLine($@"                formItem: <WtmSelect placeholder={{getLocalesValue('tips.all')}} dataSource={{[  ");
                             for (int a = 0; a < es.Count; a++)
                             {
                                 var e = es[a];
@@ -1403,7 +1507,7 @@ namespace WalkingTec.Mvvm.Mvc
                         }
                         else if (checktype == typeof(DateTime))
                         {
-                            fieldstr2.AppendLine($@"                formItem: <WtmDatePicker placeholder="""" />");
+                            fieldstr2.AppendLine($@"                formItem: <WtmRangePicker placeholder="""" />");
                         }
                     }
                     fieldstr2.Append("            }");
@@ -1453,6 +1557,454 @@ namespace WalkingTec.Mvvm.Mvc
 
             return rv;
         }
+
+
+        public string GenerateVUEView(string name, List<string> apineeded)
+        {
+            var rv = GetResource($"{name}.txt", "Spa.Vue")
+                .Replace("$modelname$", ModelName.ToLower());
+            if (apineeded == null)
+            {
+                apineeded = new List<string>();
+            }
+            Type modelType = Type.GetType(SelectedModel);
+            if (name == "config")
+            {
+                StringBuilder fieldstr = new StringBuilder();
+                StringBuilder enumstr = new StringBuilder();
+                var pros = FieldInfos.Where(x => x.IsListField == true || x.IsSearcherField == true).ToList();
+                fieldstr.Append(Environment.NewLine);
+                List<PropertyInfo> existSubPro = new List<PropertyInfo>();
+                List<string> existEnum = new List<string>();
+                int rowheight = 30;
+                for (int i = 0; i < pros.Count; i++)
+                {
+                    var item = pros[i];
+                    var mpro = modelType.GetProperties().Where(x => x.Name == item.FieldName).FirstOrDefault();
+                    string label = mpro.GetPropertyDisplayName();
+                    string render = "";
+                    string newname = item.FieldName;
+                    if (mpro.PropertyType.IsBoolOrNullableBool())
+                    {
+                        render = "columnsRenderBoolean";
+                    }
+                    if (string.IsNullOrEmpty(item.RelatedField) == false)
+                    {
+                        var subtype = Type.GetType(item.RelatedField);
+                        string prefix = "";
+                        if (subtype == typeof(FileAttachment))
+                        {
+                            if (item.FieldName.ToLower().Contains("photo") || item.FieldName.ToLower().Contains("pic") || item.FieldName.ToLower().Contains("icon"))
+                            {
+                                render = "columnsRenderImg";
+                                rowheight = 110;
+                            }
+                            else
+                            {
+                                render = "columnsRenderDownload";
+                            }
+                            var fk = DC.GetFKName2(modelType, item.FieldName);
+                            newname = fk;
+                        }
+                        else
+                        {
+                            var subpro = subtype.GetProperties().Where(x => x.Name == item.SubField).FirstOrDefault();
+                            existSubPro.Add(subpro);
+                            int count = existSubPro.Where(x => x.Name == subpro.Name).Count();
+                            if (count > 1)
+                            {
+                                prefix = count + "";
+                            }
+                            newname = item.SubField + "_view" + prefix;
+                        }
+                    }
+
+                    else
+                    {
+                        var proType = modelType.GetProperties().Where(x => x.Name == item.FieldName).Select(x => x.PropertyType).FirstOrDefault();
+                        Type checktype = proType;
+                        if (proType.IsNullable())
+                        {
+                            checktype = proType.GetGenericArguments()[0];
+                        }
+                        if (checktype.IsEnum())
+                        {
+                            if (existEnum.Contains(checktype.Name) == false)
+                            {
+                                var es = checktype.ToListItems();
+                                enumstr.AppendLine($@"export const {item.FieldName}Types: Array<any> = [");
+                                for (int a = 0; a < es.Count; a++)
+                                {
+                                    var e = es[a];
+                                    enumstr.Append($@"  {{ Text: ""{e.Text}"", Value: {e.Value} }}");
+                                    if (a < es.Count - 1)
+                                    {
+                                        enumstr.Append(",");
+                                    }
+                                    enumstr.AppendLine();
+                                }
+                                enumstr.AppendLine($@"];");
+                                existEnum.Add(checktype.Name);
+                            }
+                        }
+                    }
+                    fieldstr.Append($@"
+    {{
+        key: ""{newname}"",
+        label: ""{label}""");
+
+                    if (render != "")
+                    {
+                        fieldstr.Append($@",
+        isSlot: true ");
+                    }
+                    fieldstr.Append($@"
+    }}");
+                    fieldstr.Append(",");
+                }
+                return rv.Replace("$fields$", fieldstr.ToString()).Replace("$rowheight$", rowheight.ToString()).Replace("$enums$", enumstr.ToString());
+            }
+            if (name == "views.dialog-form")
+            {
+                StringBuilder fieldstr = new StringBuilder();
+                List<string> actions = new List<string>();
+                List<string> enums = new List<string>();
+                var pros = FieldInfos.Where(x => x.IsFormField == true).ToList();
+
+                //生成表单model
+                for (int i = 0; i < pros.Count; i++)
+                {
+                    var item = pros[i];
+                    var property = modelType.GetProperties().Where(x => x.Name == item.FieldName).FirstOrDefault();
+                    string label = property.GetPropertyDisplayName();
+                    bool isrequired = property.IsPropertyRequired();
+                    var fktest = DC.GetFKName2(modelType, item.FieldName);
+                    if (string.IsNullOrEmpty(fktest) == false)
+                    {
+                        isrequired = modelType.GetProperties().Where(x => x.Name == fktest).FirstOrDefault().IsPropertyRequired();
+                    }
+                    string rules = "rules: []";
+                    if (isrequired == true)
+                    {
+                        rules = $@"rules: [{{ required: true, message: ""{label}""+this.$t(""form.notnull""),trigger: ""blur"" }}]";
+                    }
+                    if (string.IsNullOrEmpty(item.RelatedField) == false && string.IsNullOrEmpty(item.SubIdField) == true)
+                    {
+                        var fk = DC.GetFKName2(modelType, item.FieldName);
+                        fieldstr.AppendLine($@"             ""Entity.{fk}"":{{");
+                    }
+                    else
+                    {
+                        fieldstr.AppendLine($@"             ""Entity.{item.FieldName}"":{{");
+                    }
+                    fieldstr.AppendLine($@"                 label: ""{label}"",");
+                    fieldstr.AppendLine($@"                 {rules},");
+                    if (string.IsNullOrEmpty(item.RelatedField) == false)
+                    {
+                        var subtype = Type.GetType(item.RelatedField);
+                        if (item.SubField == "`file")
+                        {
+                            if (item.FieldName.ToLower().Contains("photo") || item.FieldName.ToLower().Contains("pic") || item.FieldName.ToLower().Contains("icon"))
+                            {
+                                fieldstr.AppendLine($@"                type: ""wtmUploadImg"",
+                    props: {{
+                        isHead: true,
+                        imageStyle: {{ width: ""100px"", height: ""100px"" }}
+                    }}
+");
+                            }
+                            else
+                            {
+                                fieldstr.AppendLine($@"                type: ""upload""");
+                            }
+                        }
+                        else
+                        {
+                            if (string.IsNullOrEmpty(item.SubIdField) == true)
+                            {
+                                fieldstr.AppendLine($@"                    type: ""select"",
+                    children: this.get{subtype.Name}Data,
+                    props: {{
+                        clearable: true
+                    }}");
+                            }
+                            else
+                            {
+                                fieldstr.AppendLine($@"                    type: ""transfer"",
+                    mapKey: ""{item.SubIdField}"",
+                    props: {{
+                        data: this.get{subtype.Name}Data.map(item => ({{
+                            key: item.Value,
+                            label: item.Text
+                        }})),
+                        titles: [this.$t(""form.all""), this.$t(""form.selected"")],
+                        filterable: true,
+                        filterMethod: filterMethod
+                    }},
+                    span: 24,
+                    defaultValue: []");
+
+                            }
+                            apineeded.Add($"get{subtype.Name}");
+                            actions.Add($"get{subtype.Name}");
+                        }
+                    }
+                    else
+                    {
+                        var proType = modelType.GetProperties().Where(x => x.Name == item.FieldName).Select(x => x.PropertyType).FirstOrDefault();
+                        Type checktype = proType;
+                        if (proType.IsNullable())
+                        {
+                            checktype = proType.GetGenericArguments()[0];
+                        }
+                        if (checktype == typeof(bool))
+                        {
+                            fieldstr.AppendLine($@"                    type: ""switch""");
+                        }
+                        else if (checktype.IsEnum())
+                        {
+                            fieldstr.AppendLine($@"                    type: ""select"",
+                    children: {item.FieldName}Types,
+                    props: {{
+                        clearable: true
+                    }}");
+
+                            enums.Add(item.FieldName + "Types");
+                        }
+                        else if (checktype.IsNumber())
+                        {
+                            fieldstr.AppendLine($@"                    type: ""input""");
+                        }
+                        else if (checktype == typeof(string))
+                        {
+                            fieldstr.AppendLine($@"                    type: ""input""");
+                        }
+                        else if (checktype == typeof(DateTime))
+                        {
+                            fieldstr.AppendLine($@"                    type: ""datePicker""");
+                        }
+                    }
+                    fieldstr.Append("            }");
+                    if (i < pros.Count - 1)
+                    {
+                        fieldstr.Append(",");
+                    }
+                    fieldstr.Append(Environment.NewLine);
+                }
+                string a1 = "";
+                string a2 = "";
+                foreach (var item in actions.Distinct())
+                {
+                    a1 += $@"    @Action
+    {item};
+    @State
+    {item}Data;
+";
+                    a2 += $@"        this.{item}();
+";
+                }
+                string import = "";
+                if (enums.Count > 0)
+                {
+                    import = $@"import {{ {enums.Distinct().ToSpratedString()} }} from ""../config"";";
+                }
+                return rv.Replace("$fields$", fieldstr.ToString()).Replace("$actions$", a1).Replace("$runactions$", a2).Replace("$import$", import);
+            }
+
+            if (name == "index")
+            {
+                StringBuilder fieldstr2 = new StringBuilder();
+                StringBuilder actions = new StringBuilder();
+                List<string> acts = new List<string>();
+                List<string> enums = new List<string>();
+                var pros2 = FieldInfos.Where(x => x.IsSearcherField == true || x.IsListField).ToList();
+                int searchcount = 0;
+                for (int i = 0; i < pros2.Count; i++)
+                {
+
+                    var item = pros2[i];
+                    if (item.IsListField == true)
+                    {
+                        var mpro = modelType.GetProperties().Where(x => x.Name == item.FieldName).FirstOrDefault();
+                        if (mpro.PropertyType.IsBoolOrNullableBool())
+                        {
+                            actions.AppendLine($@"      <template #{item.FieldName}=""rowData"">
+        <el-switch :value=""rowData.row.{item.FieldName} === 'true' || rowData.row.{item.FieldName} === true"" disabled />
+      </template>
+");
+                        }
+                        if (string.IsNullOrEmpty(item.RelatedField) == false)
+                        {
+                            var subtype = Type.GetType(item.RelatedField);
+                            var fk = DC.GetFKName2(modelType, item.FieldName);
+                            if (subtype == typeof(FileAttachment))
+                            {
+                                if (item.FieldName.ToLower().Contains("photo") || item.FieldName.ToLower().Contains("pic") || item.FieldName.ToLower().Contains("icon"))
+                                {
+                                    actions.AppendLine($@"      <template #{fk}=""rowData"">
+        <el-image v-if=""!!rowData.row.{fk}"" style=""width: 100px; height: 100px"" :src=""'/api/_file/downloadFile/'+rowData.row.{fk}"" fit=""cover"" />
+      </template>
+");
+                                }
+                                else
+                                {
+                                    actions.AppendLine($@"      <template #{fk}=""rowData"">
+        <el-link icon=""el-icon-edit"" v-if=""!!rowData.row.{fk}"" :href=""'/api/_file/downloadFile/'+rowData.row.{fk}"">{{{{ $t(""table.download"")}}}}</el-link>
+      </template>
+");
+                                }
+                            }
+                        }
+                    }
+                    if (item.IsSearcherField == true)
+                    {
+                        if (item.SubField == "`file")
+                        {
+                            continue;
+                        }
+                        searchcount++;
+                        var property = modelType.GetProperties().Where(x => x.Name == item.FieldName).FirstOrDefault();
+                        string label = property.GetPropertyDisplayName();
+                        string rules = "rules: []";
+
+                        if (string.IsNullOrEmpty(item.RelatedField) == false)
+                        {
+                            if (string.IsNullOrEmpty(item.SubIdField) == true)
+                            {
+                                var fk = DC.GetFKName2(modelType, item.FieldName);
+                                fieldstr2.AppendLine($@"                ""{fk}"":{{");
+                            }
+                            else
+                            {
+                                fieldstr2.AppendLine($@"                ""Selected{item.FieldName}IDs"":{{");
+                            }
+                        }
+                        else
+                        {
+                            fieldstr2.AppendLine($@"                ""{item.FieldName}"":{{");
+                        }
+                        fieldstr2.AppendLine($@"                    label: ""{label}"",");
+                        fieldstr2.AppendLine($@"                    {rules},");
+                        if (string.IsNullOrEmpty(item.RelatedField) == false)
+                        {
+                            var subtype = Type.GetType(item.RelatedField);
+                            if (string.IsNullOrEmpty(item.SubIdField) == true)
+                            {
+                                fieldstr2.AppendLine($@"                    type: ""select"",
+                    children: this.get{subtype.Name}Data,
+                    props: {{
+                        clearable: true,
+                        placeholder: '全部'
+                    }}");
+
+                            }
+                            else
+                            {
+                                fieldstr2.AppendLine($@"                    type: ""select"",
+                    children: this.get{subtype.Name}Data,
+                    props: {{
+                        clearable: true ,
+                        multiple: true,
+                        ""collapse-tags"": true
+                    }}");
+
+                            }
+                            apineeded.Add($"get{subtype.Name}");
+                            acts.Add($"get{subtype.Name}");
+                        }
+                        else
+                        {
+                            var proType = modelType.GetProperties().Where(x => x.Name == item.FieldName).Select(x => x.PropertyType).FirstOrDefault();
+                            Type checktype = proType;
+                            if (proType.IsNullable())
+                            {
+                                checktype = proType.GetGenericArguments()[0];
+                            }
+                            if (checktype == typeof(bool))
+                            {
+                                fieldstr2.AppendLine($@"                    type: ""switch""");
+                            }
+                            else if (checktype.IsEnum())
+                            {
+                                fieldstr2.AppendLine($@"                    type: ""select"",
+                    children: {item.FieldName}Types,
+                    props: {{
+                        clearable: true,
+                        placeholder: this.$t(""form.all"")
+                    }}");
+
+                                enums.Add(item.FieldName + "Types");
+                            }
+                            else if (checktype.IsNumber())
+                            {
+                                fieldstr2.AppendLine($@"                    type: ""input""");
+                            }
+                            else if (checktype == typeof(string))
+                            {
+                                fieldstr2.AppendLine($@"                    type: ""input""");
+                            }
+                            else if (checktype == typeof(DateTime))
+                            {
+                                fieldstr2.AppendLine($@"                    type: ""datePicker"",
+                    span: 12,
+                    props: {{
+                            type: ""datetimerange"",
+                        ""value-format"": ""yyyy-MM-dd HH:mm:ss"",
+                        ""range-separator"": ""-"",
+                        ""start-placeholder"": this.$t(""table.startdate""),
+                        ""end-placeholder"": this.$t(""table.enddate"")
+                    }}");
+                            }
+                        }
+                        if (searchcount > 2)
+                        {
+                            fieldstr2.AppendLine("                    ,isHidden: !this.isActive");
+                        }
+                        fieldstr2.Append("              },");
+                        fieldstr2.Append(Environment.NewLine);
+                    }
+                }
+
+                string a1 = "";
+                string a2 = "";
+                foreach (var item in acts.Distinct())
+                {
+                    a1 += $@"    @Action
+    {item};
+    @State
+    {item}Data;
+";
+                    a2 += $@"        this.{item}();
+";
+                }
+
+
+                return rv.Replace("$fields$", fieldstr2.ToString()).Replace("$actions$", actions.ToString()).Replace("$enums$", enums.Distinct().ToSpratedString())
+                    .Replace("$acts$", a1).Replace("$runactions$", a2);
+
+            }
+            if (name == "store.api")
+            {
+                StringBuilder fieldstr = new StringBuilder();
+                StringBuilder efieldstr = new StringBuilder();
+
+                var apis = apineeded.Distinct().ToList();
+                for (int i = 0; i < apis.Count; i++)
+                {
+                    var item = apis[i];
+                    fieldstr.AppendLine($@"const {item} = {{
+  url: reqPath + ""{item}s"",
+  method: ""get"",
+  dataType: ""array""
+}}; ");
+                    efieldstr.AppendLine($"{item},");
+                }
+                return rv.Replace("$fields$", fieldstr.ToString()).Replace("$efields$", efieldstr.ToString());
+            }
+
+            return rv;
+        }
+
 
         public string GetResource(string fileName, string subdir = "")
         {
@@ -1507,7 +2059,7 @@ namespace WalkingTec.Mvvm.Mvc
 
     }
 
-    public enum FieldInfoType { Normal, One2Many, Many2Many}
+    public enum FieldInfoType { Normal, One2Many, Many2Many }
 
     public class FieldInfo
     {
@@ -1554,7 +2106,7 @@ namespace WalkingTec.Mvvm.Mvc
         /// </summary>
         public string SubIdField { get; set; }
 
-        public string GetField(IDataContext DC,Type modelType)
+        public string GetField(IDataContext DC, Type modelType)
         {
             if (this.InfoType == FieldInfoType.One2Many)
             {
@@ -1575,7 +2127,7 @@ namespace WalkingTec.Mvvm.Mvc
                 var fk = this.GetField(DC, modelType);
                 fktype = modelType.GetProperties().Where(x => x.Name == fk).Select(x => x.PropertyType).FirstOrDefault();
             }
-            if(this.InfoType == FieldInfoType.Many2Many)
+            if (this.InfoType == FieldInfoType.Many2Many)
             {
                 var middletype = modelType.GetProperties().Where(x => x.Name == this.FieldName).Select(x => x.PropertyType).FirstOrDefault();
                 fktype = middletype.GetGenericArguments()[0].GetProperties().Where(x => x.Name == this.SubIdField).Select(x => x.PropertyType).FirstOrDefault();

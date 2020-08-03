@@ -1,6 +1,8 @@
-# WalkingTec.Mvvm for aspnet core
+English | [简体中文](./README.zh-CN.md) 
 
-WalkingTec.Mvvm框架（简称WTM）最早开发与2013年，基于Asp.net MVC3 和 最早的Entity Framework, 当初主要是为了解决公司内部开发效率低，代码风格不统一的问题。经历了四年间数十个项目的考验，框架逐步的完善，推出了四个主要版本。 2017年9月，我们将代码移植到了.Net Core上，并进行了深度优化和重构，推出了基于Asp.net Core和EF Core的全新框架，新框架在架构，稳定性，速度上都有长足进步，真正成为一款高效开发的利器。
+# WalkingTec.Mvvm for asp.net core
+
+Walkingtec.mvvm framework (WTM) is a rapid development framework based on .net core. It supports LayUI, React, VUE. WTM has built-in code generator to maximize development efficiency. It is a powerful tool for efficient web development.
 
 [![Coverage Status](https://coveralls.io/repos/github/dotnetcore/WTM/badge.svg?branch=master)](https://coveralls.io/github/dotnetcore/WTM?branch=master)
 [![Member project of .NET Core Community](https://img.shields.io/badge/member%20project%20of-NCC-9e20c9.svg)](https://github.com/dotnetcore)
@@ -13,7 +15,7 @@ WalkingTec.Mvvm框架（简称WTM）最早开发与2013年，基于Asp.net MVC3 
 | Platform | Build Server | SDK | Master Status  | Develop Status  |
 | -------- | ------------ | ---- |---------|---------|
 | Azure Pipelines |  Windows/Linux/OSX |  v2.2.300 | [![Build Status](https://dev.azure.com/vitowu/WTM/_apis/build/status/WTM-CI?branchName=master)](https://dev.azure.com/vitowu/WTM/_build/latest?definitionId=12&branchName=master) | [![Build Status](https://dev.azure.com/vitowu/WTM/_apis/build/status/WTM-CI?branchName=develop)](https://dev.azure.com/vitowu/WTM/_build/latest?definitionId=12&branchName=develop) |
-| Azure Pipelines |  Windows/Linux/OSX |  v3.0.100-preview8-013656 | [![Build Status](https://dev.azure.com/vitowu/WTM/_apis/build/status/WTM-CI-sdk_v3.0?branchName=master)](https://dev.azure.com/vitowu/WTM/_build/latest?definitionId=18&branchName=master) | [![Build Status](https://dev.azure.com/vitowu/WTM/_apis/build/status/WTM-CI-sdk_v3.0?branchName=develop)](https://dev.azure.com/vitowu/WTM/_build/latest?definitionId=18&branchName=develop) |
+| Azure Pipelines |  Windows/Linux/OSX |  v3.1.101 | [![Build Status](https://dev.azure.com/vitowu/WTM/_apis/build/status/WTM-CI-sdk_v3.1?branchName=feature/dotnet3)](https://dev.azure.com/vitowu/WTM/_build/latest?definitionId=28&branchName=master) | [![Build Status](https://dev.azure.com/vitowu/WTM/_apis/build/status/WTM-CI-sdk_v3.1?branchName=feature/dotnet3)](https://dev.azure.com/vitowu/WTM/_build/latest?definitionId=28&branchName=feature/dotnet3) |
 | AppVeyor |  Windows/Linux |  v2.2.300 | - | - |
 | Travis   | Linux/OSX |  v2.2.300 | - | - |
 
@@ -26,53 +28,50 @@ Package name                              | Version                     | Downlo
 `WalkingTec.Mvvm.Mvc.Admin` | [![NuGet](https://img.shields.io/nuget/v/WalkingTec.Mvvm.Mvc.Admin.svg?style=flat-square&label=nuget)](https://www.nuget.org/packages/WalkingTec.Mvvm.Mvc.Admin/) | ![downloads](https://img.shields.io/nuget/dt/WalkingTec.Mvvm.Mvc.Admin.svg)
 `WalkingTec.Mvvm.TagHelpers.LayUI` | [![NuGet](https://img.shields.io/nuget/v/WalkingTec.Mvvm.TagHelpers.LayUI.svg?style=flat-square&label=nuget)](https://www.nuget.org/packages/WalkingTec.Mvvm.TagHelpers.LayUI/) | ![downloads](https://img.shields.io/nuget/dt/WalkingTec.Mvvm.TagHelpers.LayUI.svg)
 
-框架主要特点：
+## WTM Features
 
-框架提供了4类ViewModel，涵盖了主流Web应用程序常见的功能，分别是：
-  BaseCRUDVM 提供最常见的数据增删改的功能
-  PagedListVM 提供分页列表以及导出的功能
-  ImportVM & TemplateVM 提供数据导入的功能
-  BatchVM 提供批量操作的功能
+WTM provides 4 types of ViewModel, covering all of the common functionalities of mainstream web applications. 
 
-框架自带代码生成器，开发高效快捷
+- CrudVM provides most common functionalities for data addition, deletion and modification.
 
-框架提供了数十种前台控件，包括了Form,Grid,Panel,Dialog等几乎所有常用控件，在不进行前后分离的情况下，后端人员也可以轻松写出漂亮的前台页面。目前框架只支持Layui作为前端UI，后期我们会支持更多。
+- ListVM provides paging and exporting functionality.
 
-框架提供了内置的用户，角色，用户组，数据权限，页面权限，菜单，日志，邮件，短信，文件等后台常用管理功能
+- ImportVM & TemplateVM provides importing via excel functionality.
 
-框架支持单点登录，门户Portal，分布式数据库
+- BatchVM provides batch operation functionality.
 
-框架提供了Redis,DFS等后台开发常用库的简化操作
+- WTM has its own code generator, which makes development efficient and fast.
+
+- WTM provides dozens of client-side controls, including Form, Grid, Panel, Dialog and quite alot of other common controls. 
+
+- WTM provides built-in user, role, user group, Data permission, page permission, menu, log, mail, SMS, file and other common back-end  functionalities;
+
+- WTM supports single sign on, portal and distributed database;
+
+- WTM provides simplified integration with libraries such as Redis, DFS etc.
+
+- WTM provides both server-side and client-side frameworks for building user interfaces.
 
 
-框架提供了前后端分离和不分离两种模式
-
-| 模式 | UI | 状态  |
+| Mode | UI | Status  |
 |--------- |------------- |---------|
-|不分离 |LayUI |稳定|
-|前后端分离 |React |RTM|
-|前后端分离 |VUE |开发中|
-
-WTM框架的前后端分离模式同样可以使用代码生成器同时生成前台和后台的代码，极大的降低了前后端人员的沟通成本，从本质上提升了开发效率，让“分离”不再复杂和昂贵。
+|Server-side |LayUI |Stable|
+|Client-side |React |Stable|
+|Client-side |VUE |RTM|
 
 
+Under WTM framework's client-side mode, you can also use code generator to generate server-side and client-side code at the same time, greatly reducing the communication cost of front-end and back-end developers, essentially improving the development efficiency, so that "separation" is no longer complex and expensive.
 
-![WTM框架微信公众号](https://mmbiz.qpic.cn/mmbiz_jpg/L66Un3Tp12ria8hmdkjlfYQdOjA9dusW5xOOlS26GZTfk9Hs2uzHiaMXG4df96849seoGFiatGrqODTWPr7SsOqoA/0?wx_fmt=jpeg)
+Framework document address: http://wtmdoc.walkingtec.cn
 
-关注WTM微信公众号，及时了解框架更新，公众号还会定期发布视频教程
+Framework Q&A community: https://community.walkingtec.cn
 
-框架文档地址：http://wtmdoc.walkingtec.cn  文档还在不断完善中。。。
-框架QQ交流群：694148336
+Frame QQ communication group: 694148336
 
-您可以点这里 http://wtmdoc.walkingtec.cn/setup 在线一键生成WTM的项目，立刻开始体验WTM之美~~~
+## Click <a href="http://wtmdoc.walkingtec.cn/setup">here</a>  to generate a WTM project online and experience the beauty of WTM immediately~~~
 
+At present, we are a team of 7 developers. We are looking for all kinds of C#, React, VUE experts to join us! 
 
-****
+If WTM hepls you:
 
-
-最后感谢各位老板的支持和捐赠，具体捐赠信息请见 https://wtmdoc.walkingtec.cn/#/Home/DonateList
-
-如果WTM帮助到了你，欢迎赞助点让我们持续建造更好的轮子：
-
-<img src="https://wtmdoc.walkingtec.cn/imgs/zanshang.jpg"  >
-
+<a href="https://www.paypal.me/dotnetWTM" target="_blank"><img src="https://wtmdoc.walkingtec.cn/imgs/pp_h_rgb.webp"  width="150"></a>

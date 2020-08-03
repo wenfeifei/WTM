@@ -37,6 +37,8 @@ namespace WalkingTec.Mvvm.Core
         [JsonIgnore]
         public Dictionary<string, object> FC { get; set; }
 
+        public IModelStateService MSD { get; set; }
+
         /// <summary>
         /// 获取VM的全名
         /// </summary>
@@ -88,12 +90,20 @@ namespace WalkingTec.Mvvm.Core
         /// 是否有效，针对继承PersistPoco的Model
         /// </summary>
         [Display(Name = "IsValid")]
+        [JsonIgnore]
         public bool? IsValid { get; set; }
         /// <summary>
         /// 用于框架判断列表页是否全局刷新
         /// </summary>
         [JsonIgnore]
         public bool IsPostBack { get; set; }
+
+        /// <summary>
+        /// 前台搜索框是否展开
+        /// </summary>
+        [JsonIgnore]
+        public bool? IsExpanded { get; set; }
+
         #endregion
 
         #endregion
@@ -146,6 +156,10 @@ namespace WalkingTec.Mvvm.Core
             InitVM();
         }
 
+        public virtual void Validate()
+        {
+
+        }
         /// <summary>
         /// 将源 VM 的 FC 等内容复制到本VM中
         /// </summary>
@@ -156,6 +170,7 @@ namespace WalkingTec.Mvvm.Core
             this.DC = vm.DC;
             this.Session = vm.Session;
             this.LoginUserInfo = vm.LoginUserInfo;
+            this.MSD = vm.MSD;
             //var CurrentCS = vm.CurrentCS;
             //var CreatorAssembly = vm.CreatorAssembly;
         }
