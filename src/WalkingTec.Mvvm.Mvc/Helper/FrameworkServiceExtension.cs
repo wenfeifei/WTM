@@ -141,11 +141,10 @@ namespace WalkingTec.Mvvm.Mvc
                     options.AddPolicy("_donotusedefault",
                         builder =>
                         {
-                            builder.WithOrigins("http://localhost",
-                                                "https://localhost")
-                                                .AllowAnyHeader()
-                                                .AllowAnyMethod()
-                                                .AllowCredentials();
+                            builder.SetIsOriginAllowed((a) => true)
+                                              .AllowAnyHeader()
+                                              .AllowAnyMethod()
+                                              .AllowCredentials();
                         });
                 }
             });
@@ -278,7 +277,7 @@ namespace WalkingTec.Mvvm.Mvc
             #region CookieWithJwtAuth
 
             // services.AddSingleton<UserStore>();
-            services.AddSingleton<ITokenService, TokenService>();
+            services.AddScoped<ITokenService, TokenService>();
 
             var jwtOptions = config.GetSection("JwtOptions").Get<JwtOptions>();
             if (jwtOptions == null)

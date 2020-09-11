@@ -2,6 +2,31 @@
 
 ## v3.x.x （2.x.x同步更新）
 
+##3.7.2 以及 2.7.2 (2020-9-7)
+* **修改：**  修改默认跨域逻辑，不配置跨域信息会默认允许所有跨域
+* **修改：**  修复RefreshToken方法在pgsql中报错的问题
+* **修改：**  修复菜单管理模块显示的bug，以及修改菜单会造成其他角色都有权限的bug
+* **修改：**  修复多表头导出时表头显示的问题
+* **修改：**  修改导入逻辑，默认不启用sqlserver的bulkcopy，可以通过在ImportVM中设置UseBulkSave属性来启用
+
+##3.7.1 以及 2.7.1 (2020-8-26)
+* **新增：**  Layui模式下新增<wt:colorpicker>颜色选择器，参考文档 https://wtmdoc.walkingtec.cn/#/UI/ColorPicker
+* **修改：**  修复<wt:checkbox>多选显示的bug
+* **修改：**  修复了一些layui模式下自带的系统管理页面
+* **修改：**  修复了导出excel时数字格式为null值时报错的问题
+* **修改：**  修复了FixConnectionAttribute没有优先检查方法的问题
+* **修改：**  修复了IssueTokenAsync方法并发时报错的问题
+
+##3.7.0 以及 2.7.0 (2020-8-18)
+
+* **修改：**  导出excel时，如果ListVM中设置了多表头，导出的excel也会显示多表头
+* **修改：**  修复了3.x版本中ListVM调用存储过程报错的问题，并更新了相关文档
+* **修改：**  修复了layui下SearchPanel的重置按钮没有正确重置表单的问题
+* **修改：**  修复了layui下多表头的列表显示错位的问题
+* **修改：**  新生成的3.x的项目添加了RuntimeCompilation，并默认设置为调试模式下Razor页面可以动态编译
+* **修改：**  修复VUE和React模式中菜单管理设置为不显示菜单时仍然显示的错误
+* **修改：**  修复VUE和React模式中获取和显示文件的接口不受IsFilePublic属性控制的问题
+
 ##3.6.9 以及 2.6.9 (2020-7-23)
 * **修改：**  修改了PersistPoco的假删除逻辑
 * **修改：**  修复了layui下使用TreeContainer搜索，搜索条件会消失的bug

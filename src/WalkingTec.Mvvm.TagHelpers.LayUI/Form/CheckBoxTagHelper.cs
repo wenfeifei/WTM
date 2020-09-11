@@ -130,6 +130,11 @@ namespace WalkingTec.Mvvm.TagHelpers.LayUI
                         if (item.Value.ToString().ToLower() == (item2 as ComboSelectListItem).Value.ToString().ToLower())
                         {
                             item.Selected = true;
+                            break;
+                        }
+                        else
+                        {
+                            item.Selected = false;
                         }
                     }
                     else
@@ -137,6 +142,11 @@ namespace WalkingTec.Mvvm.TagHelpers.LayUI
                         if (item.Value.ToString().ToLower() == item2?.ToString().ToLower())
                         {
                             item.Selected = true;
+                            break;
+                        }
+                        else
+                        {
+                            item.Selected = false;
                         }
                     }
                 }
