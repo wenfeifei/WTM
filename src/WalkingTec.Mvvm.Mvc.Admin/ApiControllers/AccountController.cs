@@ -175,7 +175,7 @@ namespace WalkingTec.Mvvm.Admin.Api
             return await _authService.RefreshTokenAsync(refreshToken);
         }
 
-        [AllRights]
+        [Public]
         [HttpGet("[action]/{id}")]
         public IActionResult CheckLogin(Guid? id)
         {
@@ -229,7 +229,7 @@ namespace WalkingTec.Mvvm.Admin.Api
             }
         }
 
-        [AllRights]
+        [Public]
         [HttpGet("[action]")]
         public IActionResult CheckUserInfo()
         {
@@ -313,9 +313,9 @@ namespace WalkingTec.Mvvm.Admin.Api
         [HttpGet("[action]/{id}")]
         public async Task Logout(Guid? id)
         {
+            await LoginUserInfo.RemoveUserCache(LoginUserInfo.Id.ToString());
             HttpContext.Session.Clear();
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            HttpContext.Response.Redirect("/");
         }
 
 

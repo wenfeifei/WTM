@@ -213,16 +213,16 @@ namespace WalkingTec.Mvvm.Core
                 var DR = sheet.CreateRow(i + max);
                 foreach (var baseCol in GridHeaders)
                 {
-                    //处理枚举变量的多语言
-                    bool IsEmunBoolParp = false;
-                    var proType = baseCol.FieldType;
-                    if (proType.IsEnumOrNullableEnum())
-                    {
-                        IsEmunBoolParp = true;
-                    }
 
                     foreach (var col in baseCol.BottomChildren)
                     {
+                        //处理枚举变量的多语言
+                        bool IsEmunBoolParp = false;
+                        var proType = col.FieldType;
+                        if (proType.IsEnumOrNullableEnum())
+                        {
+                            IsEmunBoolParp = true;
+                        }
                         //获取数据，并过滤特殊字符
                         string text = Regex.Replace(col.GetText(List[i]).ToString(), @"<[^>]*>", String.Empty);
 
@@ -349,7 +349,11 @@ namespace WalkingTec.Mvvm.Core
         /// <returns></returns>
         private int MakeExcelHeader(ISheet sheet, IEnumerable<IGridColumn<TModel>> cols, int rowIndex, int colIndex, ICellStyle style)
         {
-            var row = sheet.CreateRow(rowIndex);
+            var row = sheet.GetRow(rowIndex);
+            if (row == null)
+            {
+                row = sheet.CreateRow(rowIndex);
+            }
             int maxLevel = cols.Select(x => x.MaxLevel).Max();
             //循环所有列
             foreach (var col in cols)
@@ -366,7 +370,7 @@ namespace WalkingTec.Mvvm.Core
                 }
                 var cellRangeAddress = new CellRangeAddress(rowIndex, rowIndex + rowspan, colIndex, colIndex + bcount - 1);
                 sheet.AddMergedRegion(cellRangeAddress);
-                if(rowspan > 0 || bcount > 1)
+                if (rowspan > 0 || bcount > 1)
                 {
                     cell.CellStyle.Alignment = HorizontalAlignment.Center;
                     cell.CellStyle.VerticalAlignment = VerticalAlignment.Center;

@@ -247,7 +247,7 @@ namespace WalkingTec.Mvvm.Core
                     //如果值为空字符串且没要求必填，则跳过
                     if (vv is string && vv.ToString() == "")
                     {
-                        var requiredAttrs = li.GetType().GetProperty(SubFieldExp.GetPropertyName()).GetCustomAttributes(typeof(RequiredAttribute), false).ToList();
+                        var requiredAttrs = li.GetType().GetSingleProperty(SubFieldExp.GetPropertyName()).GetCustomAttributes(typeof(RequiredAttribute), false).ToList();
 
                         if (requiredAttrs == null || requiredAttrs.Count == 0)
                         {
@@ -311,10 +311,10 @@ namespace WalkingTec.Mvvm.Core
             }
             if (allExp.Count > 1)
             {
-                rv = Expression.Or(allExp[0], allExp[1]);
+                rv = Expression.OrElse(allExp[0], allExp[1]);
                 for (int i = 2; i < allExp.Count; i++)
                 {
-                    rv = Expression.Or(rv, allExp[i]);
+                    rv = Expression.OrElse(rv, allExp[i]);
                 }
             }
             return rv;
